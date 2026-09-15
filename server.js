@@ -100,7 +100,7 @@ app.get("/api/status", (_req, res) => {
   });
 });
 
-app.get("*", (_req, res) => res.sendFile(new URL("./public/index.html", import.meta.url).pathname));
+app.get("/{*splat}", (_req, res) => res.sendFile(new URL("./public/index.html", import.meta.url).pathname));
 
 app.listen(PORT, () => {
   console.log(`Passenger Control running on http://localhost:${PORT}`);
