@@ -91,13 +91,12 @@ app.post("/api/control", async (req, res) => {
     res.status(e.status || 500).json({ ok: false, error: e.message });
   }
 });
-app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", (_req, res) => {
-  res.type("application/x-pem-file");
+app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", (req, res) => {
   res.sendFile(
-    new URL(
-      "./public/.well-known/appspecific/com.tesla.3p.public-key.pem",
-      import.meta.url
-    ).pathname
+    "com.tesla.3p.public-key.pem",
+    {
+      root: "public/.well-known/appspecific"
+    }
   );
 });
 app.get("/api/status", (_req, res) => {
