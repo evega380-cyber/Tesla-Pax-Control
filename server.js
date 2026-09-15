@@ -91,7 +91,15 @@ app.post("/api/control", async (req, res) => {
     res.status(e.status || 500).json({ ok: false, error: e.message });
   }
 });
-
+app.get("/.well-known/appspecific/com.tesla.3p.public-key.pem", (_req, res) => {
+  res.type("application/x-pem-file");
+  res.sendFile(
+    new URL(
+      "./public/.well-known/appspecific/com.tesla.3p.public-key.pem",
+      import.meta.url
+    ).pathname
+  );
+});
 app.get("/api/status", (_req, res) => {
   res.json({
     app: "Tesla Passenger Control",
