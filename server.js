@@ -216,8 +216,8 @@ app.get("/auth/login", (_req, res) => {
       response_type: "code",
       client_id: CLIENT_ID,
       redirect_uri: REDIRECT_URI,
-      scope:
-        "openid offline_access vehicle_cmds",
+  scope:
+  "openid offline_access vehicle_cmds vehicle_device_data",
       state,
       locale: "en-US",
       prompt: "login"
