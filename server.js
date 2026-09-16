@@ -818,7 +818,7 @@ app.get(
           REDIRECT_URI,
 
         scope:
-          "openid offline_access vehicle_cmds vehicle_device_data",
+  "openid offline_access vehicle_cmds vehicle_device_data vehicle_location",
 
         state,
         locale: "en-US",
