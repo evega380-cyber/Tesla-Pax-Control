@@ -10,7 +10,10 @@
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 />
-
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Allura&display=swap"
+>
 <style>
 *{
   box-sizing:border-box;
@@ -92,7 +95,27 @@ button{cursor:pointer}
   line-height:1;
   letter-spacing:-4px;
 }
+.welcomeScript{
+  display:block;
+  font-family:"Allura",cursive;
+  color:#1ed760;
+  font-size:clamp(70px,10vw,125px);
+  font-weight:400;
+  line-height:.8;
+  letter-spacing:0;
+  text-shadow:0 0 28px rgba(30,215,96,.18);
+}
 
+.welcomePassengerName{
+  display:block;
+  margin-top:18px;
+  color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  font-size:clamp(48px,6vw,78px);
+  font-weight:700;
+  line-height:1;
+  letter-spacing:-2px;
+}
 .welcomeMessage{
   margin:25px auto 0;
   max-width:700px;
@@ -1311,8 +1334,13 @@ function showPassengerWelcome(
     "waitingTitle"
   );
 
-  welcomeTitle.textContent=
-    `Welcome, ${passengerName}! 👋`;
+  welcomeTitle.innerHTML=
+  `<span class="welcomeScript">Welcome,</span>`+
+  `<span class="welcomePassengerName"></span>`;
+
+welcomeTitle
+  .querySelector(".welcomePassengerName")
+  .textContent=passengerName;
 
   welcomeMessage.textContent=
     "Sit back, relax, and enjoy the ride. Choose your music, adjust your comfort, or follow your trip.";
