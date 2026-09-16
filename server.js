@@ -1812,22 +1812,10 @@ app.get(
         Object.values(vehicleInfo)[0];
 
       return res.json({
-        ok: true,
-
-        vehicleRecordFound:
-          Boolean(vehicle),
-
-        vehicleRecordType:
-          Array.isArray(vehicle)
-            ? "array"
-            : typeof vehicle,
-
-        vehicleRecordKeys:
-          vehicle &&
-          typeof vehicle === "object" &&
-          !Array.isArray(vehicle)
-            ? Object.keys(vehicle)
-            : []
+  ok: true,
+  fleetTelemetryVersion:
+    vehicle?.fleet_telemetry_version ?? null
+});
       });
 
     } catch (error) {
