@@ -585,6 +585,24 @@ app.get("/api/test-vehicle", async (req, res) => {
     });
   }
 });
+app.get("/api/test-scopes", async (req, res) => {
+  try {
+    const accessToken = await getTeslaAccessToken();
+
+    const payloadPart = accessToken.split(".")[1];
+    const payload = JSON.parse(
+      Buffer.from(payloadPart, "base64url").toString("utf8")
+    );
+
+    res.json({
+      scopes: payload.scp || []
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
 /*
  * -------------------------------------------------------
  * PASSENGER COMMAND ENDPOINT
