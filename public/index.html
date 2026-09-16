@@ -983,11 +983,30 @@ button:active{
 <div id="message" class="message"></div>
 
 </div>
-
+<button
+  onclick="testVoice()"
+  style="position:fixed;z-index:2000;top:20px;left:20px;padding:20px;font-size:20px;"
+>
+  Test Voice
+</button>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+function testVoice(){
 
+  window.speechSynthesis.cancel();
+
+  const speech =
+    new SpeechSynthesisUtterance(
+      "Welcome aboard! Pax Control is ready for your ride."
+    );
+
+  speech.lang = "en-US";
+  speech.volume = 1;
+  speech.rate = 0.92;
+
+  window.speechSynthesis.speak(speech);
+}
 /* --------------------------------------------------
    STATE
 -------------------------------------------------- */
