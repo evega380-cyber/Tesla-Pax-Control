@@ -56,7 +56,7 @@ RUN printf '%s\n' \
 '  -key-file /data/private-key.pem \' \
 '  -host 127.0.0.1 \' \
 '  -port 4443 \' \
-' '  2>&1 &' \
+'   2>&1 &' \
 '' \
 'echo "Tesla command proxy started on localhost:4443"' \
 '' \
