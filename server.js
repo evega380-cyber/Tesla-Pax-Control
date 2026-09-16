@@ -1803,28 +1803,30 @@ app.get(
         });
       }
 
-      const vehicleInfo = data?.response?.vehicle_info;
+      const vehicleInfo =
+        data?.response?.vehicle_info || {};
+
+      // Get the vehicle record without returning
+      // the VIN/key itself.
+      const vehicle =
+        Object.values(vehicleInfo)[0];
 
       return res.json({
         ok: true,
 
-        vehicleInfoType:
-          Array.isArray(vehicleInfo)
+        vehicleRecordFound:
+          Boolean(vehicle),
+
+        vehicleRecordType:
+          Array.isArray(vehicle)
             ? "array"
-            : typeof vehicleInfo,
+            : typeof vehicle,
 
-        vehicleInfoKeys:
-          vehicleInfo &&
-          !Array.isArray(vehicleInfo) &&
-          typeof vehicleInfo === "object"
-            ? Object.keys(vehicleInfo)
-            : [],
-
-        firstVehicleKeys:
-          Array.isArray(vehicleInfo) &&
-          vehicleInfo[0] &&
-          typeof vehicleInfo[0] === "object"
-            ? Object.keys(vehicleInfo[0])
+        vehicleRecordKeys:
+          vehicle &&
+          typeof vehicle === "object" &&
+          !Array.isArray(vehicle)
+            ? Object.keys(vehicle)
             : []
       });
 
