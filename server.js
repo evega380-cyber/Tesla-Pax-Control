@@ -23,12 +23,22 @@ const CLIENT_ID = process.env.TESLA_CLIENT_ID;
 const CLIENT_SECRET = process.env.TESLA_CLIENT_SECRET;
 const VIN = process.env.TESLA_VIN;
 
+const SPOTIFY_CLIENT_ID =
+  process.env.SPOTIFY_CLIENT_ID;
+
+const SPOTIFY_CLIENT_SECRET =
+  process.env.SPOTIFY_CLIENT_SECRET;
+
 const APP_URL = (
   process.env.APP_URL ||
   "https://tesla-pax-control-production.up.railway.app"
 ).replace(/\/+$/, "");
 
-const REDIRECT_URI = `${APP_URL}/auth/callback`;
+const REDIRECT_URI =
+  `${APP_URL}/auth/callback`;
+
+const SPOTIFY_REDIRECT_URI =
+  `${APP_URL}/spotify/callback`;
 
 const TESLA_AUTH_URL =
   "https://auth.tesla.com/oauth2/v3/authorize";
@@ -39,9 +49,22 @@ const TESLA_TOKEN_URL =
 const TESLA_AUDIENCE =
   "https://fleet-api.prd.na.vn.cloud.tesla.com";
 
+const SPOTIFY_AUTH_URL =
+  "https://accounts.spotify.com/authorize";
+
+const SPOTIFY_TOKEN_URL =
+  "https://accounts.spotify.com/api/token";
+
+const SPOTIFY_API_URL =
+  "https://api.spotify.com/v1";
+
 const TOKEN_FILE =
   process.env.TESLA_TOKEN_FILE ||
   "/data/tesla-oauth.json";
+
+const SPOTIFY_TOKEN_FILE =
+  process.env.SPOTIFY_TOKEN_FILE ||
+  "/data/spotify-oauth.json";
 
 const TESLA_PROXY_URL =
   "https://localhost:4443";
@@ -63,18 +86,123 @@ app.use(express.urlencoded({ extended: true }));
 
 /*
  * -------------------------------------------------------
+ * COOKIE HELPER
+ * -------------------------------------------------------
+ */
+
+function parseCookies(req) {
+  const cookieHeader =
+    req.headers.cookie || "";
+
+  const cookies = {};
+
+  for (const part of cookieHeader.split(";")) {
+    const separator = part.indexOf("=");
+
+    if (separator === -1) {
+      continue;
+    }
+
+    const name =
+      part.slice(0, separator).trim();
+
+    const value =
+      part.slice(separator + 1).trim();
+
+    try {
+      cookies[name] =
+        decodeURIComponent(value);
+    } catch {
+      cookies[name] = value;
+    }
+  }
+
+  return cookies;
+}
+
+/*
+ * -------------------------------------------------------
+ * PASSENGER AUTHORIZATION
+ * -------------------------------------------------------
+ */
+
+app.get(
+  "/passenger/setup",
+  (req, res) => {
+    const token = req.query.token;
+
+    if (
+      !process.env.PASSENGER_TOKEN ||
+      token !== process.env.PASSENGER_TOKEN
+    ) {
+      return res
+        .status(401)
+        .send(
+          "Invalid passenger authorization."
+        );
+    }
+
+    res.cookie(
+      "pax_passenger",
+      process.env.PASSENGER_TOKEN,
+      {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge:
+          1000 *
+          60 *
+          60 *
+          24 *
+          365
+      }
+    );
+
+    return res.redirect("/");
+  }
+);
+
+function requirePassenger(
+  req,
+  res,
+  next
+) {
+  const cookies =
+    parseCookies(req);
+
+  if (
+    !process.env.PASSENGER_TOKEN ||
+    cookies.pax_passenger !==
+      process.env.PASSENGER_TOKEN
+  ) {
+    return res
+      .status(401)
+      .json({
+        ok: false,
+        error:
+          "Passenger authorization required."
+      });
+  }
+
+  next();
+}
+
+/*
+ * -------------------------------------------------------
  * TESLA OAUTH TOKEN STORAGE
  * -------------------------------------------------------
  */
 
 function saveTokens(tokens) {
-  const directory = path.dirname(TOKEN_FILE);
+  const directory =
+    path.dirname(TOKEN_FILE);
 
   fs.mkdirSync(directory, {
     recursive: true
   });
 
-  const existing = loadTokens();
+  const existing =
+    loadTokens();
 
   const data = {
     access_token:
@@ -133,10 +261,7 @@ function loadTokens() {
 }
 
 function tokenNeedsRefresh(tokens) {
-  if (
-    !tokens ||
-    !tokens.access_token
-  ) {
+  if (!tokens?.access_token) {
     return true;
   }
 
@@ -151,44 +276,46 @@ function tokenNeedsRefresh(tokens) {
     tokens.obtained_at +
     tokens.expires_in * 1000;
 
-  return Date.now() >=
-    expiration - 60000;
+  return (
+    Date.now() >=
+    expiration - 60000
+  );
 }
 
 async function refreshTeslaTokens() {
   const existing =
     loadTokens();
 
-  if (
-    !existing?.refresh_token
-  ) {
+  if (!existing?.refresh_token) {
     throw new Error(
       "Tesla authorization is missing. Please authorize Pax Control again."
     );
   }
 
-  const response = await fetch(
-    TESLA_TOKEN_URL,
-    {
-      method: "POST",
+  const response =
+    await fetch(
+      TESLA_TOKEN_URL,
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/x-www-form-urlencoded"
-      },
+        headers: {
+          "Content-Type":
+            "application/x-www-form-urlencoded"
+        },
 
-      body: new URLSearchParams({
-        grant_type:
-          "refresh_token",
+        body:
+          new URLSearchParams({
+            grant_type:
+              "refresh_token",
 
-        client_id:
-          CLIENT_ID,
+            client_id:
+              CLIENT_ID,
 
-        refresh_token:
-          existing.refresh_token
-      })
-    }
-  );
+            refresh_token:
+              existing.refresh_token
+          })
+      }
+    );
 
   const data =
     await response.json();
@@ -221,9 +348,7 @@ async function getTeslaAccessToken() {
     );
   }
 
-  if (
-    tokenNeedsRefresh(tokens)
-  ) {
+  if (tokenNeedsRefresh(tokens)) {
     return await refreshTeslaTokens();
   }
 
@@ -232,7 +357,200 @@ async function getTeslaAccessToken() {
 
 /*
  * -------------------------------------------------------
- * PUBLIC KEY
+ * SPOTIFY TOKEN STORAGE
+ * -------------------------------------------------------
+ */
+
+function loadSpotifyTokens() {
+  try {
+    if (
+      !fs.existsSync(
+        SPOTIFY_TOKEN_FILE
+      )
+    ) {
+      return null;
+    }
+
+    return JSON.parse(
+      fs.readFileSync(
+        SPOTIFY_TOKEN_FILE,
+        "utf8"
+      )
+    );
+  } catch (error) {
+    console.error(
+      "Unable to load Spotify tokens:",
+      error.message
+    );
+
+    return null;
+  }
+}
+
+function saveSpotifyTokens(tokens) {
+  const directory =
+    path.dirname(
+      SPOTIFY_TOKEN_FILE
+    );
+
+  fs.mkdirSync(directory, {
+    recursive: true
+  });
+
+  const existing =
+    loadSpotifyTokens();
+
+  const data = {
+    access_token:
+      tokens.access_token ||
+      existing?.access_token,
+
+    refresh_token:
+      tokens.refresh_token ||
+      existing?.refresh_token,
+
+    token_type:
+      tokens.token_type ||
+      existing?.token_type ||
+      "Bearer",
+
+    scope:
+      tokens.scope ||
+      existing?.scope,
+
+    expires_in:
+      tokens.expires_in ||
+      existing?.expires_in,
+
+    obtained_at:
+      Date.now()
+  };
+
+  const temporaryFile =
+    `${SPOTIFY_TOKEN_FILE}.tmp`;
+
+  fs.writeFileSync(
+    temporaryFile,
+    JSON.stringify(data, null, 2),
+    {
+      encoding: "utf8",
+      mode: 0o600
+    }
+  );
+
+  fs.renameSync(
+    temporaryFile,
+    SPOTIFY_TOKEN_FILE
+  );
+}
+
+function spotifyTokenNeedsRefresh(
+  tokens
+) {
+  if (!tokens?.access_token) {
+    return true;
+  }
+
+  if (
+    !tokens.expires_in ||
+    !tokens.obtained_at
+  ) {
+    return false;
+  }
+
+  const expiration =
+    tokens.obtained_at +
+    tokens.expires_in * 1000;
+
+  return (
+    Date.now() >=
+    expiration - 60000
+  );
+}
+
+async function refreshSpotifyTokens() {
+  const existing =
+    loadSpotifyTokens();
+
+  if (!existing?.refresh_token) {
+    throw new Error(
+      "Spotify authorization is missing."
+    );
+  }
+
+  const basicAuth =
+    Buffer.from(
+      `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
+    ).toString("base64");
+
+  const response =
+    await fetch(
+      SPOTIFY_TOKEN_URL,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            `Basic ${basicAuth}`,
+
+          "Content-Type":
+            "application/x-www-form-urlencoded"
+        },
+
+        body:
+          new URLSearchParams({
+            grant_type:
+              "refresh_token",
+
+            refresh_token:
+              existing.refresh_token
+          })
+      }
+    );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    console.error(
+      "Spotify token refresh failed:",
+      data
+    );
+
+    throw new Error(
+      data?.error_description ||
+      data?.error ||
+      "Spotify token refresh failed."
+    );
+  }
+
+  saveSpotifyTokens(data);
+
+  return data.access_token;
+}
+
+async function getSpotifyAccessToken() {
+  const tokens =
+    loadSpotifyTokens();
+
+  if (!tokens) {
+    throw new Error(
+      "Spotify has not been connected."
+    );
+  }
+
+  if (
+    spotifyTokenNeedsRefresh(tokens)
+  ) {
+    return await refreshSpotifyTokens();
+  }
+
+  return tokens.access_token;
+}
+
+/*
+ * -------------------------------------------------------
+ * TESLA PUBLIC KEY
  * -------------------------------------------------------
  */
 
@@ -248,9 +566,7 @@ app.get(
         "com.tesla.3p.public-key.pem"
       );
 
-    if (
-      !fs.existsSync(publicKeyPath)
-    ) {
+    if (!fs.existsSync(publicKeyPath)) {
       return res
         .status(404)
         .send(
@@ -268,7 +584,7 @@ app.get(
 
 /*
  * -------------------------------------------------------
- * TESLA OAUTH LOGIN
+ * TESLA OAUTH
  * -------------------------------------------------------
  */
 
@@ -327,12 +643,6 @@ app.get(
     );
   }
 );
-
-/*
- * -------------------------------------------------------
- * TESLA OAUTH CALLBACK
- * -------------------------------------------------------
- */
 
 app.get(
   "/auth/callback",
@@ -451,117 +761,385 @@ app.get(
 
 /*
  * -------------------------------------------------------
- * COOKIE HELPER
- * -------------------------------------------------------
- */
-
-function parseCookies(req) {
-  const cookieHeader =
-    req.headers.cookie || "";
-
-  const cookies = {};
-
-  for (
-    const part of
-      cookieHeader.split(";")
-  ) {
-    const separator =
-      part.indexOf("=");
-
-    if (separator === -1) {
-      continue;
-    }
-
-    const name =
-      part
-        .slice(0, separator)
-        .trim();
-
-    const value =
-      part
-        .slice(separator + 1)
-        .trim();
-
-    try {
-      cookies[name] =
-        decodeURIComponent(value);
-    } catch {
-      cookies[name] = value;
-    }
-  }
-
-  return cookies;
-}
-
-/*
- * -------------------------------------------------------
- * PASSENGER IPAD SETUP
+ * SPOTIFY OAUTH
  * -------------------------------------------------------
  */
 
 app.get(
-  "/passenger/setup",
+  "/spotify/login",
+  requirePassenger,
   (req, res) => {
-    const token =
-      req.query.token;
-
     if (
-      !process.env.PASSENGER_TOKEN ||
-      token !==
-        process.env.PASSENGER_TOKEN
+      !SPOTIFY_CLIENT_ID ||
+      !SPOTIFY_CLIENT_SECRET
     ) {
       return res
-        .status(401)
+        .status(500)
         .send(
-          "Invalid passenger authorization."
+          "Spotify OAuth is not configured."
         );
     }
 
+    const state =
+      crypto
+        .randomBytes(24)
+        .toString("hex");
+
     res.cookie(
-      "pax_passenger",
-      process.env.PASSENGER_TOKEN,
+      "spotify_oauth_state",
+      state,
       {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
-
+        sameSite: "lax",
         maxAge:
-          1000 *
-          60 *
-          60 *
-          24 *
-          365
+          10 * 60 * 1000
       }
     );
 
-    return res.redirect("/");
+    const params =
+      new URLSearchParams({
+        response_type: "code",
+
+        client_id:
+          SPOTIFY_CLIENT_ID,
+
+        redirect_uri:
+          SPOTIFY_REDIRECT_URI,
+
+        state,
+
+        scope:
+          [
+            "user-read-playback-state",
+            "user-read-currently-playing",
+            "user-modify-playback-state"
+          ].join(" ")
+      });
+
+    return res.redirect(
+      `${SPOTIFY_AUTH_URL}?${params.toString()}`
+    );
   }
 );
 
-function requirePassenger(
-  req,
-  res,
-  next
-) {
-  const cookies =
-    parseCookies(req);
+app.get(
+  "/spotify/callback",
+  async (req, res) => {
+    try {
+      const {
+        code,
+        state,
+        error
+      } = req.query;
 
-  if (
-    !process.env.PASSENGER_TOKEN ||
-    cookies.pax_passenger !==
-      process.env.PASSENGER_TOKEN
-  ) {
-    return res
-      .status(401)
-      .json({
-        ok: false,
-        error:
-          "Passenger authorization required."
-      });
+      if (error) {
+        return res
+          .status(400)
+          .send(
+            `Spotify authorization failed: ${error}`
+          );
+      }
+
+      const cookies =
+        parseCookies(req);
+
+      if (
+        !code ||
+        !state ||
+        !cookies.spotify_oauth_state ||
+        state !==
+          cookies.spotify_oauth_state
+      ) {
+        return res
+          .status(400)
+          .send(
+            "Invalid Spotify authorization response."
+          );
+      }
+
+      const basicAuth =
+        Buffer.from(
+          `${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`
+        ).toString("base64");
+
+      const response =
+        await fetch(
+          SPOTIFY_TOKEN_URL,
+          {
+            method: "POST",
+
+            headers: {
+              Authorization:
+                `Basic ${basicAuth}`,
+
+              "Content-Type":
+                "application/x-www-form-urlencoded"
+            },
+
+            body:
+              new URLSearchParams({
+                grant_type:
+                  "authorization_code",
+
+                code,
+
+                redirect_uri:
+                  SPOTIFY_REDIRECT_URI
+              })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        console.error(
+          "Spotify OAuth callback failed:",
+          data
+        );
+
+        return res
+          .status(response.status)
+          .send(
+            "Spotify authorization failed."
+          );
+      }
+
+      saveSpotifyTokens(data);
+
+      res.clearCookie(
+        "spotify_oauth_state"
+      );
+
+      return res.redirect(
+        "/?spotify=connected"
+      );
+    } catch (error) {
+      console.error(
+        "Spotify OAuth callback error:",
+        error.message
+      );
+
+      return res
+        .status(500)
+        .send(
+          "Spotify authorization failed."
+        );
+    }
+  }
+);
+
+/*
+ * -------------------------------------------------------
+ * SPOTIFY API HELPER
+ * -------------------------------------------------------
+ */
+
+async function spotifyRequest(
+  endpoint,
+  options = {}
+) {
+  const accessToken =
+    await getSpotifyAccessToken();
+
+  const response =
+    await fetch(
+      `${SPOTIFY_API_URL}${endpoint}`,
+      {
+        ...options,
+
+        headers: {
+          Authorization:
+            `Bearer ${accessToken}`,
+
+          ...(options.headers || {})
+        }
+      }
+    );
+
+  if (response.status === 204) {
+    return null;
   }
 
-  next();
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    const error =
+      new Error(
+        data?.error?.message ||
+        "Spotify request failed."
+      );
+
+    error.statusCode =
+      response.status;
+
+    throw error;
+  }
+
+  return data;
 }
+
+/*
+ * -------------------------------------------------------
+ * SPOTIFY STATUS
+ * -------------------------------------------------------
+ */
+
+app.get(
+  "/api/spotify/status",
+  requirePassenger,
+  (req, res) => {
+    const tokens =
+      loadSpotifyTokens();
+
+    return res.json({
+      configured:
+        Boolean(
+          SPOTIFY_CLIENT_ID &&
+          SPOTIFY_CLIENT_SECRET
+        ),
+
+      connected:
+        Boolean(
+          tokens?.access_token
+        )
+    });
+  }
+);
+
+/*
+ * -------------------------------------------------------
+ * SPOTIFY NOW PLAYING
+ * -------------------------------------------------------
+ */
+
+app.get(
+  "/api/spotify/now-playing",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const data =
+        await spotifyRequest(
+          "/me/player/currently-playing"
+        );
+
+      if (!data?.item) {
+        return res.json({
+          playing: false,
+          item: null
+        });
+      }
+
+      return res.json({
+        playing:
+          Boolean(
+            data.is_playing
+          ),
+
+        progressMs:
+          data.progress_ms || 0,
+
+        item: {
+          name:
+            data.item.name,
+
+          artist:
+            data.item.artists
+              ?.map(
+                artist =>
+                  artist.name
+              )
+              .join(", ") || "",
+
+          album:
+            data.item.album?.name ||
+            "",
+
+          artwork:
+            data.item.album
+              ?.images?.[0]?.url ||
+            null,
+
+          durationMs:
+            data.item.duration_ms ||
+            0,
+
+          uri:
+            data.item.uri
+        }
+      });
+    } catch (error) {
+      console.error(
+        "Spotify now-playing error:",
+        error.message
+      );
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message
+        });
+    }
+  }
+);
+
+/*
+ * -------------------------------------------------------
+ * SPOTIFY DEVICES
+ * -------------------------------------------------------
+ */
+
+app.get(
+  "/api/spotify/devices",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const data =
+        await spotifyRequest(
+          "/me/player/devices"
+        );
+
+      const devices =
+        (data?.devices || [])
+          .map(device => ({
+            id: device.id,
+            name: device.name,
+            type: device.type,
+            active:
+              device.is_active,
+            volume:
+              device.volume_percent
+          }));
+
+      return res.json({
+        devices
+      });
+    } catch (error) {
+      console.error(
+        "Spotify devices error:",
+        error.message
+      );
+
+      return res
+        .status(
+          error.statusCode ||
+          500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message
+        });
+    }
+  }
+);
 
 /*
  * -------------------------------------------------------
@@ -574,6 +1152,9 @@ app.get(
   (req, res) => {
     const tokens =
       loadTokens();
+
+    const spotifyTokens =
+      loadSpotifyTokens();
 
     res.json({
       app:
@@ -598,8 +1179,18 @@ app.get(
 
       passengerProtectionConfigured:
         Boolean(
-          process.env
-            .PASSENGER_TOKEN
+          process.env.PASSENGER_TOKEN
+        ),
+
+      spotifyConfigured:
+        Boolean(
+          SPOTIFY_CLIENT_ID &&
+          SPOTIFY_CLIENT_SECRET
+        ),
+
+      spotifyConnected:
+        Boolean(
+          spotifyTokens?.access_token
         ),
 
       limits: {
@@ -612,7 +1203,6 @@ app.get(
     });
   }
 );
-
 
 /*
  * -------------------------------------------------------
@@ -651,8 +1241,7 @@ async function sendTeslaCommand(
   const agent =
     new https.Agent({
       ca,
-      rejectUnauthorized:
-        true
+      rejectUnauthorized: true
     });
 
   const url =
@@ -671,7 +1260,6 @@ async function sendTeslaCommand(
           url,
           {
             method: "POST",
-
             agent,
 
             headers: {
@@ -706,25 +1294,17 @@ async function sendTeslaCommand(
                 if (raw) {
                   try {
                     data =
-                      JSON.parse(
-                        raw
-                      );
+                      JSON.parse(raw);
                   } catch {
-                    data = {
-                      raw
-                    };
+                    data = { raw };
                   }
                 }
 
                 if (
-                  response.statusCode >=
-                    200 &&
-                  response.statusCode <
-                    300
+                  response.statusCode >= 200 &&
+                  response.statusCode < 300
                 ) {
-                  return resolve(
-                    data
-                  );
+                  return resolve(data);
                 }
 
                 const error =
@@ -741,9 +1321,7 @@ async function sendTeslaCommand(
                 error.teslaResponse =
                   data;
 
-                return reject(
-                  error
-                );
+                return reject(error);
               }
             );
           }
@@ -754,10 +1332,7 @@ async function sendTeslaCommand(
         reject
       );
 
-      request.write(
-        payload
-      );
-
+      request.write(payload);
       request.end();
     }
   );
@@ -765,7 +1340,7 @@ async function sendTeslaCommand(
 
 /*
  * -------------------------------------------------------
- * PASSENGER COMMAND ENDPOINT
+ * PASSENGER TESLA COMMANDS
  * -------------------------------------------------------
  */
 
@@ -796,9 +1371,7 @@ app.post(
           "media_volume_up"
       };
 
-      if (
-        commands[action]
-      ) {
+      if (commands[action]) {
         const result =
           await sendTeslaCommand(
             commands[action],
@@ -817,24 +1390,17 @@ app.post(
         "temperature"
       ) {
         const tempF =
-          Number(
-            temperatureF
-          );
+          Number(temperatureF);
 
         if (
-          !Number.isFinite(
-            tempF
-          ) ||
-          tempF <
-            MIN_TEMP_F ||
-          tempF >
-            MAX_TEMP_F
+          !Number.isFinite(tempF) ||
+          tempF < MIN_TEMP_F ||
+          tempF > MAX_TEMP_F
         ) {
           return res
             .status(400)
             .json({
               ok: false,
-
               error:
                 `Temperature must be between ${MIN_TEMP_F}°F and ${MAX_TEMP_F}°F.`
             });
@@ -843,8 +1409,7 @@ app.post(
         const tempC =
           Number(
             (
-              ((tempF - 32) *
-                5) /
+              ((tempF - 32) * 5) /
               9
             ).toFixed(1)
           );
@@ -863,16 +1428,12 @@ app.post(
 
         return res.json({
           ok: true,
-
           action:
             "temperature",
-
           temperatureF:
             tempF,
-
           temperatureC:
             tempC,
-
           tesla:
             result
         });
@@ -882,7 +1443,6 @@ app.post(
         .status(400)
         .json({
           ok: false,
-
           error:
             "Unsupported passenger command."
         });
@@ -899,7 +1459,6 @@ app.post(
         )
         .json({
           ok: false,
-
           error:
             error.message ||
             "Tesla command failed."
