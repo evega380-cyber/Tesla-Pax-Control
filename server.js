@@ -220,7 +220,9 @@ app.get("/auth/login", (_req, res) => {
   "openid offline_access vehicle_cmds vehicle_device_data",
       state,
       locale: "en-US",
-      prompt: "login"
+      prompt: "login",
+prompt_missing_scopes: "true",
+require_requested_scopes: "true"
     });
 
   res.redirect(
