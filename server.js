@@ -1716,7 +1716,63 @@ async function sendTeslaCommand(
     }
   );
 }
+/*
+ * -------------------------------------------------------
+ * TEMPORARY TESLA NAVIGATION TEST
+ * -------------------------------------------------------
+ */
 
+app.get(
+  "/api/test-navigation",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const accessToken =
+        await getTeslaAccessToken();
+
+      const response =
+        await fetch(
+          `${TESLA_AUDIENCE}/api/1/vehicles/${encodeURIComponent(VIN)}/vehicle_data?endpoints=location_data`,
+          {
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`
+            }
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        return res
+          .status(response.status)
+          .json(data);
+      }
+
+      return res.json({
+        ok: true,
+        navigation:
+          data?.response?.drive_state ||
+          data?.response?.location_data ||
+          data?.response
+      });
+
+    } catch (error) {
+      console.error(
+        "Navigation test error:",
+        error.message
+      );
+
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          error: error.message
+        });
+    }
+  }
+);
 /*
  * -------------------------------------------------------
  * PASSENGER TESLA COMMANDS
