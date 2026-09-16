@@ -412,7 +412,174 @@ app.get(
     }
   }
 );
+/*
+ * -------------------------------------------------------
+ * TEMPORARY PARTNER ACCOUNT REGISTRATION
+ * -------------------------------------------------------
+ */
 
+app.get(
+  "/admin/register-partner",
+  async (req, res) => {
+    try {
+      const adminSecret =
+        process.env.ADMIN_SECRET;
+
+      const suppliedSecret =
+        req.query.secret;
+
+      if (
+        !adminSecret ||
+        !suppliedSecret ||
+        suppliedSecret !== adminSecret
+      ) {
+        return res.status(401).json({
+          ok: false,
+          error: "Unauthorized"
+        });
+      }
+
+      if (!CLIENT_ID || !CLIENT_SECRET) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "Tesla application credentials are not configured."
+        });
+      }
+
+      /*
+       * Obtain Partner authentication token.
+       */
+      const tokenResponse = await fetch(
+        TESLA_TOKEN_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded"
+          },
+
+          body: new URLSearchParams({
+            grant_type:
+              "client_credentials",
+
+            client_id:
+              CLIENT_ID,
+
+            client_secret:
+              CLIENT_SECRET,
+
+            audience:
+              TESLA_AUDIENCE,
+
+            scope:
+              "openid vehicle_device_data vehicle_cmds vehicle_charging_cmds"
+          })
+        }
+      );
+
+      const tokenData =
+        await tokenResponse.json();
+
+      if (
+        !tokenResponse.ok ||
+        !tokenData.access_token
+      ) {
+        console.error(
+          "Partner token request failed:",
+          tokenData?.error ||
+          tokenResponse.status
+        );
+
+        return res.status(500).json({
+          ok: false,
+          step: "partner_token",
+          error:
+            tokenData?.error_description ||
+            tokenData?.error ||
+            "Unable to obtain Tesla Partner token."
+        });
+      }
+
+      /*
+       * Register Railway as the Partner domain.
+       */
+      const partnerResponse = await fetch(
+        `${TESLA_AUDIENCE}/api/1/partner_accounts`,
+        {
+          method: "POST",
+
+          headers: {
+            Authorization:
+              `Bearer ${tokenData.access_token}`,
+
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            domain:
+              "tesla-pax-control-production.up.railway.app"
+          })
+        }
+      );
+
+      const responseText =
+        await partnerResponse.text();
+
+      let responseData;
+
+      try {
+        responseData =
+          JSON.parse(responseText);
+      } catch {
+        responseData = {
+          message: responseText
+        };
+      }
+
+      if (!partnerResponse.ok) {
+        console.error(
+          "Partner registration failed:",
+          partnerResponse.status
+        );
+
+        return res
+          .status(partnerResponse.status)
+          .json({
+            ok: false,
+            step:
+              "partner_registration",
+            teslaStatus:
+              partnerResponse.status,
+            teslaResponse:
+              responseData
+          });
+      }
+
+      return res.json({
+        ok: true,
+        message:
+          "Railway Partner Account registration succeeded.",
+        teslaResponse:
+          responseData
+      });
+
+    } catch (error) {
+      console.error(
+        "Partner registration error:",
+        error.message
+      );
+
+      return res.status(500).json({
+        ok: false,
+        error:
+          "Partner registration encountered an error."
+      });
+    }
+  }
+);
 /*
  * -------------------------------------------------------
  * STATUS
