@@ -604,19 +604,7 @@ app.get("/api/test-scopes", async (req, res) => {
       error: error.message
     });
   }
-});
-function requirePassenger(req, res, next) {
-  const token = req.headers["x-passenger-token"];
 
-  if (!process.env.PASSENGER_TOKEN || token !== process.env.PASSENGER_TOKEN) {
-    return res.status(401).json({
-      ok: false,
-      error: "Passenger authorization required."
-    });
-  }
-
-  next();
-}
 /*
  * -------------------------------------------------------
  * PASSENGER COMMAND ENDPOINT
