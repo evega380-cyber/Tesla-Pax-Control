@@ -1,12 +1,14 @@
 import express from "express";
 import path from "path";
 import crypto from "crypto";
+import fs from "fs/promises";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 
 dotenv.config();
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -15,27 +17,163 @@ const PORT = process.env.PORT || 3000;
 
 const CLIENT_ID = process.env.TESLA_CLIENT_ID;
 const CLIENT_SECRET = process.env.TESLA_CLIENT_SECRET;
+const VIN = process.env.TESLA_VIN;
 
-const REDIRECT_URI =
-  "https://tesla-pax-control.onrender.com/auth/callback";
+const APP_URL = (
+  process.env.APP_URL ||
+  "https://tesla-pax-control-production.up.railway.app"
+).replace(/\/+$/, "");
 
-const TESLA_AUTH =
+const REDIRECT_URI = `${APP_URL}/auth/callback`;
+
+const TESLA_AUTH_URL =
   "https://auth.tesla.com/oauth2/v3/authorize";
 
-const TESLA_TOKEN =
+const TESLA_TOKEN_URL =
   "https://fleet-auth.prd.vn.cloud.tesla.com/oauth2/v3/token";
 
 const TESLA_AUDIENCE =
   "https://fleet-api.prd.na.vn.cloud.tesla.com";
 
-const VIN = process.env.TESLA_VIN;
+const TOKEN_FILE =
+  process.env.TESLA_TOKEN_FILE ||
+  "/data/tesla-oauth.json";
 
-const PROXY_URL =
-  process.env.TESLA_PROXY_URL || "https://127.0.0.1:4443";
+const MIN_TEMP_F = 65;
+const MAX_TEMP_F = 72;
+
+const oauthStates = new Map();
 
 /*
  * -------------------------------------------------------
- * TESLA PUBLIC VIRTUAL KEY
+ * TOKEN STORAGE
+ * -------------------------------------------------------
+ */
+
+async function saveTokens(tokens) {
+  const record = {
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    expires_in: Number(tokens.expires_in || 0),
+    obtained_at: Date.now()
+  };
+
+  await fs.mkdir(path.dirname(TOKEN_FILE), {
+    recursive: true
+  });
+
+  const temporaryFile = `${TOKEN_FILE}.tmp`;
+
+  await fs.writeFile(
+    temporaryFile,
+    JSON.stringify(record),
+    { mode: 0o600 }
+  );
+
+  await fs.rename(
+    temporaryFile,
+    TOKEN_FILE
+  );
+}
+
+async function loadTokens() {
+  try {
+    const raw =
+      await fs.readFile(TOKEN_FILE, "utf8");
+
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+function tokenNeedsRefresh(tokens) {
+  if (!tokens?.access_token) {
+    return true;
+  }
+
+  const expiresAt =
+    tokens.obtained_at +
+    (tokens.expires_in * 1000);
+
+  // Refresh if less than 60 seconds remain.
+  return Date.now() >= expiresAt - 60000;
+}
+
+async function refreshTeslaTokens(tokens) {
+  if (!tokens?.refresh_token) {
+    throw new Error(
+      "Tesla authorization is required."
+    );
+  }
+
+  const response = await fetch(
+    TESLA_TOKEN_URL,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/x-www-form-urlencoded"
+      },
+
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: CLIENT_ID,
+        refresh_token: tokens.refresh_token
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error_description ||
+      data?.error ||
+      "Tesla token refresh failed."
+    );
+  }
+
+  if (!data.refresh_token) {
+    throw new Error(
+      "Tesla did not return a replacement refresh token."
+    );
+  }
+
+  /*
+   * Tesla refresh tokens rotate.
+   * Save the replacement BEFORE returning it.
+   */
+  await saveTokens(data);
+
+  return data;
+}
+
+async function getTeslaAccessToken() {
+  let tokens = await loadTokens();
+
+  if (!tokens) {
+    throw new Error(
+      "Tesla account has not been authorized on this server."
+    );
+  }
+
+  if (tokenNeedsRefresh(tokens)) {
+    tokens =
+      await refreshTeslaTokens(tokens);
+  }
+
+  return tokens.access_token;
+}
+
+/*
+ * -------------------------------------------------------
+ * TESLA PUBLIC KEY
  * -------------------------------------------------------
  */
 
@@ -45,7 +183,8 @@ app.get(
     res.sendFile(
       "com.tesla.3p.public-key.pem",
       {
-        root: "public/.well-known/appspecific"
+        root:
+          "public/.well-known/appspecific"
       }
     );
   }
@@ -53,376 +192,226 @@ app.get(
 
 /*
  * -------------------------------------------------------
- * TESLA OAUTH LOGIN
+ * OAUTH LOGIN
  * -------------------------------------------------------
  */
-
-const oauthStates = new Set();
 
 app.get("/auth/login", (_req, res) => {
   if (!CLIENT_ID) {
     return res.status(503).send(
-      "TESLA_CLIENT_ID is not configured in Render."
+      "TESLA_CLIENT_ID is not configured."
     );
   }
 
-  const state = crypto.randomBytes(24).toString("hex");
+  const state =
+    crypto.randomBytes(32).toString("hex");
 
-  oauthStates.add(state);
+  oauthStates.set(
+    state,
+    Date.now() + 10 * 60 * 1000
+  );
 
-  // Remove unused states after 10 minutes.
-  setTimeout(() => oauthStates.delete(state), 10 * 60 * 1000);
+  const params =
+    new URLSearchParams({
+      response_type: "code",
+      client_id: CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      scope:
+        "openid offline_access vehicle_cmds",
+      state,
+      locale: "en-US",
+      prompt: "login"
+    });
 
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    locale: "en-US",
-    prompt: "login",
-    redirect_uri: REDIRECT_URI,
-    response_type: "code",
-    scope: "openid offline_access vehicle_cmds",
-    state
-  });
-
-  res.redirect(`${TESLA_AUTH}?${params.toString()}`);
+  res.redirect(
+    `${TESLA_AUTH_URL}?${params.toString()}`
+  );
 });
 
 /*
  * -------------------------------------------------------
- * TESLA OAUTH CALLBACK
+ * OAUTH CALLBACK
  * -------------------------------------------------------
  */
 
-app.get("/auth/callback", async (req, res) => {
-  try {
-    const { code, state, error, error_description } = req.query;
+app.get(
+  "/auth/callback",
+  async (req, res) => {
+    try {
+      const {
+        code,
+        state,
+        error,
+        error_description
+      } = req.query;
 
-    if (error) {
-      return res.status(400).send(`
-        <h1>Tesla authorization failed</h1>
-        <p>${String(error_description || error)}</p>
+      if (error) {
+        return res.status(400).send(
+          `Tesla authorization failed: ${
+            String(
+              error_description || error
+            )
+          }`
+        );
+      }
+
+      const stateExpiration =
+        oauthStates.get(state);
+
+      if (
+        !code ||
+        !state ||
+        !stateExpiration ||
+        Date.now() > stateExpiration
+      ) {
+        oauthStates.delete(state);
+
+        return res.status(400).send(
+          "Invalid or expired authorization request."
+        );
+      }
+
+      oauthStates.delete(state);
+
+      if (!CLIENT_ID || !CLIENT_SECRET) {
+        return res.status(503).send(
+          "Tesla OAuth credentials are not configured."
+        );
+      }
+
+      const tokenResponse =
+        await fetch(
+          TESLA_TOKEN_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded"
+            },
+
+            body: new URLSearchParams({
+              grant_type:
+                "authorization_code",
+
+              client_id:
+                CLIENT_ID,
+
+              client_secret:
+                CLIENT_SECRET,
+
+              code:
+                String(code),
+
+              audience:
+                TESLA_AUDIENCE,
+
+              redirect_uri:
+                REDIRECT_URI
+            })
+          }
+        );
+
+      const data =
+        await tokenResponse.json();
+
+      if (!tokenResponse.ok) {
+        console.error(
+          "Tesla OAuth exchange failed:",
+          data?.error ||
+          tokenResponse.status
+        );
+
+        return res.status(500).send(
+          "Tesla authorization could not be completed."
+        );
+      }
+
+      if (
+        !data.access_token ||
+        !data.refresh_token
+      ) {
+        return res.status(500).send(
+          "Tesla did not return the required authorization credentials."
+        );
+      }
+
+      await saveTokens(data);
+
+      console.log(
+        "Tesla authorization saved successfully."
+      );
+
+      res.send(`
+        <!doctype html>
+
+        <html>
+          <head>
+            <meta charset="utf-8">
+
+            <meta
+              name="viewport"
+              content="width=device-width,initial-scale=1"
+            >
+
+            <title>
+              Pax Control Authorized
+            </title>
+
+            <style>
+              body {
+                background: #111318;
+                color: white;
+                font-family:
+                  system-ui,
+                  -apple-system,
+                  sans-serif;
+
+                max-width: 650px;
+                margin: 80px auto;
+                padding: 30px;
+                text-align: center;
+              }
+
+              h1 {
+                font-size: 34px;
+              }
+
+              p {
+                color: #c7cbd3;
+                font-size: 18px;
+                line-height: 1.6;
+              }
+            </style>
+          </head>
+
+          <body>
+            <h1>✓ Tesla Authorized</h1>
+
+            <p>
+              Pax Control securely saved
+              your Tesla authorization.
+            </p>
+
+            <p>
+              You may close this page.
+            </p>
+          </body>
+        </html>
       `);
-    }
 
-    if (!code || !state || !oauthStates.has(state)) {
-      return res.status(400).send(
-        "Invalid or expired Tesla authorization request."
-      );
-    }
-
-    oauthStates.delete(state);
-
-    if (!CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(503).send(
-        "Tesla Client ID or Client Secret is missing from Render."
-      );
-    }
-
-    const tokenResponse = await fetch(TESLA_TOKEN, {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        code: String(code),
-        audience: TESLA_AUDIENCE,
-        redirect_uri: REDIRECT_URI
-      })
-    });
-
-    const data = await tokenResponse.json();
-
-    if (!tokenResponse.ok) {
+    } catch (error) {
       console.error(
-        "Tesla OAuth token exchange failed:",
-        data
+        "OAuth callback error:",
+        error.message
       );
 
-      return res.status(500).send(`
-        <h1>Tesla authorization error</h1>
-        <p>The authorization code could not be exchanged.</p>
-      `);
+      res.status(500).send(
+        "Tesla authorization encountered an error."
+      );
     }
-
-    /*
-     * IMPORTANT:
-     * We intentionally DO NOT print access_token or
-     * refresh_token to Render logs or send them to the
-     * browser.
-     *
-     * Persistent token storage will be added next.
-     */
-
-    console.log(
-      "Tesla account authorization succeeded."
-    );
-
-    res.send(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta
-            name="viewport"
-            content="width=device-width,initial-scale=1"
-          >
-          <title>Tesla Authorized</title>
-
-          <style>
-            body {
-              font-family: system-ui, sans-serif;
-              max-width: 650px;
-              margin: 70px auto;
-              padding: 20px;
-              text-align: center;
-            }
-
-            h1 {
-              font-size: 32px;
-            }
-
-            p {
-              font-size: 18px;
-              line-height: 1.5;
-            }
-          </style>
-        </head>
-
-        <body>
-          <h1>✓ Tesla Authorized</h1>
-
-          <p>
-            Your Tesla account successfully authorized
-            Pax control.
-          </p>
-
-          <p>
-            You can close this page and continue with
-            virtual-key pairing.
-          </p>
-        </body>
-      </html>
-    `);
-
-  } catch (e) {
-    console.error(
-      "OAuth callback error:",
-      e.message
-    );
-
-    res.status(500).send(
-      "Tesla authorization encountered an error."
-    );
   }
-});
-
-/*
- * -------------------------------------------------------
- * PASSENGER CONTROLS
- *
- * Vehicle Command Proxy isn't enabled yet.
- * We'll configure signed commands after OAuth/key pairing.
- * -------------------------------------------------------
- */
-
-function requireCommandConfig() {
-  const missing = [];
-
-  if (!VIN) {
-    missing.push("TESLA_VIN");
-  }
-
-  if (!process.env.TESLA_ACCESS_TOKEN) {
-    missing.push("TESLA_ACCESS_TOKEN");
-  }
-
-  if (missing.length) {
-    const err = new Error(
-      `Missing server configuration: ${missing.join(", ")}`
-    );
-
-    err.status = 503;
-
-    throw err;
-  }
-}
-
-async function proxyCommand(command, body = {}) {
-  requireCommandConfig();
-
-  const url =
-    `${PROXY_URL}/api/1/vehicles/` +
-    `${encodeURIComponent(VIN)}/command/${command}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-
-    headers: {
-      Authorization:
-        `Bearer ${process.env.TESLA_ACCESS_TOKEN}`,
-
-      "Content-Type": "application/json"
-    },
-
-    body: JSON.stringify(body)
-  });
-
-  const text = await response.text();
-
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = { raw: text };
-  }
-
-  if (!response.ok) {
-    const err = new Error(
-      data?.error_description ||
-      data?.error ||
-      `Tesla command failed (${response.status})`
-    );
-
-    err.status = response.status;
-
-    throw err;
-  }
-
-  return data;
-}
-
-/*
- * Passenger UI remains Fahrenheit.
- * Tesla receives Celsius.
- */
-
-function fahrenheitToCelsius(f) {
-  return Number(
-    (((Number(f) - 32) * 5) / 9).toFixed(1)
-  );
-}
-
-function validTempF(value) {
-  const n = Number(value);
-
-  return (
-    Number.isFinite(n) &&
-    n >= 68 &&
-    n <= 76
-  );
-}
-
-const allowed = {
-  "play-pause": () =>
-    proxyCommand("media_toggle_playback"),
-
-  "next": () =>
-    proxyCommand("media_next_track"),
-
-  "previous": () =>
-    proxyCommand("media_prev_track"),
-
-  "volume-up": () =>
-    proxyCommand("media_volume_up"),
-
-  "volume-down": () =>
-    proxyCommand("media_volume_down"),
-
-  "set-temp": tempF => {
-    const tempC =
-      fahrenheitToCelsius(tempF);
-
-    return proxyCommand(
-      "set_temps",
-      {
-        driver_temp: tempC,
-        passenger_temp: tempC
-      }
-    );
-  },
-
-  "cooler": tempF => {
-    const tempC =
-      fahrenheitToCelsius(tempF);
-
-    return proxyCommand(
-      "set_temps",
-      {
-        driver_temp: tempC,
-        passenger_temp: tempC
-      }
-    );
-  },
-
-  "warmer": tempF => {
-    const tempC =
-      fahrenheitToCelsius(tempF);
-
-    return proxyCommand(
-      "set_temps",
-      {
-        driver_temp: tempC,
-        passenger_temp: tempC
-      }
-    );
-  }
-};
-
-app.post("/api/control", async (req, res) => {
-  try {
-    const action = req.body?.action;
-
-    if (!allowed[action]) {
-      return res.status(400).json({
-        error: "Action not allowed"
-      });
-    }
-
-    let result;
-
-    if (
-      ["cooler", "warmer", "set-temp"]
-        .includes(action)
-    ) {
-      const temp =
-        Number(req.body?.temperature);
-
-      if (!validTempF(temp)) {
-        return res.status(400).json({
-          error:
-            "Temperature must be between 68°F and 76°F."
-        });
-      }
-
-      result =
-        await allowed[action](temp);
-
-    } else {
-      result =
-        await allowed[action]();
-    }
-
-    res.json({
-      ok: true,
-      result
-    });
-
-  } catch (e) {
-    console.error(
-      "Passenger command error:",
-      e.message
-    );
-
-    res.status(e.status || 500).json({
-      ok: false,
-      error: e.message
-    });
-  }
-});
+);
 
 /*
  * -------------------------------------------------------
@@ -430,26 +419,68 @@ app.post("/api/control", async (req, res) => {
  * -------------------------------------------------------
  */
 
-app.get("/api/status", (_req, res) => {
-  res.json({
-    app: "Tesla Passenger Control",
+app.get(
+  "/api/status",
+  async (_req, res) => {
+    let authorizationStored = false;
 
-    oauthConfigured:
-      Boolean(CLIENT_ID && CLIENT_SECRET),
-
-    vehicleConfigured:
-      Boolean(VIN),
-
-    limits: {
-      minTempF: 68,
-      maxTempF: 76
+    try {
+      authorizationStored =
+        Boolean(await loadTokens());
+    } catch {
+      authorizationStored = false;
     }
-  });
-});
+
+    res.json({
+      app:
+        "Tesla Passenger Control",
+
+      oauthConfigured:
+        Boolean(
+          CLIENT_ID &&
+          CLIENT_SECRET
+        ),
+
+      vehicleConfigured:
+        Boolean(VIN),
+
+      authorizationStored,
+
+      commandProxyConfigured:
+        false,
+
+      limits: {
+        minTempF: MIN_TEMP_F,
+        maxTempF: MAX_TEMP_F
+      }
+    });
+  }
+);
 
 /*
  * -------------------------------------------------------
- * PASSENGER WEB APP FALLBACK
+ * PASSENGER COMMAND ENDPOINT
+ *
+ * Deliberately disabled until Tesla's
+ * signed Vehicle Command Proxy is installed.
+ * -------------------------------------------------------
+ */
+
+app.post(
+  "/api/control",
+  (_req, res) => {
+    res.status(503).json({
+      ok: false,
+
+      error:
+        "Vehicle command signing is not configured yet."
+    });
+  }
+);
+
+/*
+ * -------------------------------------------------------
+ * PASSENGER WEB APP
  * -------------------------------------------------------
  */
 
@@ -459,18 +490,25 @@ const __filename =
 const __dirname =
   path.dirname(__filename);
 
-app.get("/{*splat}", (_req, res) => {
-  res.sendFile(
-    path.join(
-      __dirname,
-      "public",
-      "index.html"
-    )
-  );
-});
+app.get(
+  "/{*splat}",
+  (_req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        "public",
+        "index.html"
+      )
+    );
+  }
+);
 
-app.listen(PORT, () => {
-  console.log(
-    `Passenger Control running on port ${PORT}`
-  );
-});
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `Passenger Control running on port ${PORT}`
+    );
+  }
+);
