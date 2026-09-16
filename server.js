@@ -186,7 +186,198 @@ function requirePassenger(
 
   next();
 }
+/*
+ * -------------------------------------------------------
+ * DRIVER + CURRENT RIDE
+ * -------------------------------------------------------
+ */
 
+const DRIVER_PIN =
+  process.env.DRIVER_PIN;
+
+let currentRide = {
+  active: false,
+  passengerName: "",
+  rideId: null,
+  startedAt: null
+};
+
+/*
+ * Driver authorization
+ */
+
+function requireDriver(req, res, next) {
+  const pin =
+    String(
+      req.headers["x-driver-pin"] || ""
+    ).trim();
+
+  if (
+    !DRIVER_PIN ||
+    pin !== DRIVER_PIN
+  ) {
+    return res
+      .status(401)
+      .json({
+        ok: false,
+        error:
+          "Driver authorization required."
+      });
+  }
+
+  next();
+}
+
+/*
+ * Passenger checks current ride.
+ *
+ * This endpoint intentionally returns only
+ * the passenger's first name and ride state.
+ */
+
+app.get(
+  "/api/ride",
+  requirePassenger,
+  (req, res) => {
+    return res.json({
+      active:
+        currentRide.active,
+
+      passengerName:
+        currentRide.active
+          ? currentRide.passengerName
+          : "",
+
+      rideId:
+        currentRide.active
+          ? currentRide.rideId
+          : null
+    });
+  }
+);
+
+/*
+ * Driver checks current ride
+ */
+
+app.get(
+  "/api/driver/ride",
+  requireDriver,
+  (req, res) => {
+    return res.json({
+      active:
+        currentRide.active,
+
+      passengerName:
+        currentRide.passengerName,
+
+      rideId:
+        currentRide.rideId,
+
+      startedAt:
+        currentRide.startedAt
+    });
+  }
+);
+
+/*
+ * Start a ride
+ */
+
+app.post(
+  "/api/driver/start-ride",
+  requireDriver,
+  (req, res) => {
+    let passengerName =
+      String(
+        req.body?.passengerName || ""
+      )
+        .trim()
+        .replace(/\s+/g, " ")
+        .slice(0, 30);
+
+    /*
+     * Keep the welcome name simple.
+     * Letters, spaces, apostrophes
+     * and hyphens are allowed.
+     */
+
+    passengerName =
+      passengerName.replace(
+        /[^\p{L}\p{M}' -]/gu,
+        ""
+      );
+
+    if (!passengerName) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          error:
+            "Enter the passenger's first name."
+        });
+    }
+
+    currentRide = {
+      active: true,
+
+      passengerName,
+
+      rideId:
+        crypto
+          .randomBytes(12)
+          .toString("hex"),
+
+      startedAt:
+        new Date()
+          .toISOString()
+    };
+
+    console.log(
+      "Passenger ride started."
+    );
+
+    return res.json({
+      ok: true,
+
+      ride: {
+        active: true,
+        passengerName,
+        rideId:
+          currentRide.rideId
+      }
+    });
+  }
+);
+
+/*
+ * End the current ride.
+ *
+ * The passenger name is immediately
+ * removed rather than being kept
+ * as ride history.
+ */
+
+app.post(
+  "/api/driver/end-ride",
+  requireDriver,
+  (req, res) => {
+    currentRide = {
+      active: false,
+      passengerName: "",
+      rideId: null,
+      startedAt: null
+    };
+
+    console.log(
+      "Passenger ride ended."
+    );
+
+    return res.json({
+      ok: true
+    });
+  }
+);
 /*
  * -------------------------------------------------------
  * TESLA OAUTH TOKEN STORAGE
