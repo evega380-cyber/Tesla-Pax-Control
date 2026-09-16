@@ -1811,12 +1811,11 @@ app.get(
       const vehicle =
         Object.values(vehicleInfo)[0];
 
-      return res.json({
+     return res.json({
   ok: true,
   fleetTelemetryVersion:
     vehicle?.fleet_telemetry_version ?? null
 });
-      });
 
     } catch (error) {
       console.error(
