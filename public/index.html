@@ -1,776 +1,450 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
-  <meta name="theme-color" content="#080a0d" />
-
-  <title>Pax Control</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html, body {
-      margin: 0;
-      width: 100%;
-      min-height: 100%;
-      background:
-        radial-gradient(circle at 20% 0%, #20252b 0%, #0d1014 35%, #07090b 75%);
-      color: white;
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "Helvetica Neue",
-        Arial,
-        sans-serif;
-    }
-
-    body {
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    button {
-      font: inherit;
-    }
-
-    .app {
-      min-height: 100vh;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding:
-        max(28px, env(safe-area-inset-top))
-        34px
-        max(28px, env(safe-area-inset-bottom));
-      display: flex;
-      flex-direction: column;
-      gap: 26px;
-    }
-
-    /* HEADER */
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-    }
-
-    .brand-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #1ed760;
-      display: grid;
-      place-items: center;
-      color: #07140b;
-      font-size: 24px;
-      font-weight: 900;
-    }
-
-    .brand-name {
-      font-size: 23px;
-      font-weight: 750;
-      letter-spacing: -0.5px;
-    }
-
-    .car-status {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      color: #aeb5bd;
-      font-size: 14px;
-    }
-
-    .status-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #1ed760;
-      box-shadow: 0 0 14px rgba(30, 215, 96, .7);
-    }
-
-    /* MAIN PLAYER */
-
-    .player {
-      flex: 1;
-      display: grid;
-      grid-template-columns: minmax(320px, .85fr) minmax(400px, 1.15fr);
-      gap: 55px;
-      align-items: center;
-      padding: 12px 30px;
-    }
-
-    .artwork-wrap {
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-
-    .artwork {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 28px;
-      background:
-        linear-gradient(145deg, #222932, #0c0f13);
-      box-shadow:
-        0 35px 80px rgba(0,0,0,.55),
-        0 5px 20px rgba(0,0,0,.4);
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-    }
-
-    .artwork-placeholder {
-      width: 45%;
-      height: 45%;
-      border-radius: 50%;
-      border: 13px solid rgba(255,255,255,.09);
-      position: relative;
-    }
-
-    .artwork-placeholder::after {
-      content: "";
-      position: absolute;
-      width: 30%;
-      height: 30%;
-      border-radius: 50%;
-      background: rgba(255,255,255,.1);
-      left: 35%;
-      top: 35%;
-    }
-
-    .player-info {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-width: 0;
-    }
-
-    .eyebrow {
-      color: #1ed760;
-      text-transform: uppercase;
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 1.8px;
-      margin-bottom: 16px;
-    }
-
-    .song-title {
-      font-size: clamp(38px, 5vw, 70px);
-      line-height: 1;
-      letter-spacing: -2.5px;
-      font-weight: 800;
-      margin: 0 0 14px;
-    }
-
-    .artist {
-      color: #aeb5bd;
-      font-size: 24px;
-      margin-bottom: 40px;
-    }
-
-    /* PROGRESS */
-
-    .progress-row {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      color: #8e969f;
-      font-size: 12px;
-      margin-bottom: 27px;
-    }
-
-    .progress {
-      flex: 1;
-      height: 5px;
-      border-radius: 20px;
-      background: #343a40;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      width: 0%;
-      height: 100%;
-      background: white;
-      border-radius: inherit;
-    }
-
-    /* MEDIA BUTTONS */
-
-    .media-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 32px;
-      margin-bottom: 36px;
-    }
-
-    .media-button {
-      border: 0;
-      color: white;
-      background: transparent;
-      cursor: pointer;
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 34px;
-      transition: transform .12s ease, background .12s ease;
-    }
-
-    .media-button:active {
-      transform: scale(.88);
-      background: rgba(255,255,255,.08);
-    }
-
-    .play-button {
-      width: 88px;
-      height: 88px;
-      background: white;
-      color: black;
-      font-size: 37px;
-      box-shadow: 0 12px 30px rgba(0,0,0,.3);
-    }
-
-    .play-button:active {
-      background: #e8e8e8;
-    }
-
-    /* VOLUME */
-
-    .volume {
-      background: rgba(255,255,255,.055);
-      border: 1px solid rgba(255,255,255,.07);
-      border-radius: 22px;
-      padding: 18px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      backdrop-filter: blur(18px);
-    }
-
-    .volume-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #c4cad0;
-      font-weight: 650;
-    }
-
-    .volume-buttons {
-      display: flex;
-      gap: 12px;
-    }
-
-    .small-button {
-      width: 58px;
-      height: 48px;
-      border-radius: 14px;
-      border: 0;
-      background: rgba(255,255,255,.1);
-      color: white;
-      font-size: 23px;
-      cursor: pointer;
-    }
-
-    .small-button:active {
-      background: rgba(255,255,255,.2);
-      transform: scale(.94);
-    }
-
-    /* CLIMATE */
-
-    .climate {
-      border-radius: 26px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(22px);
-      padding: 20px 27px;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 25px;
-    }
-
-    .climate-title {
-      font-size: 17px;
-      font-weight: 700;
-    }
-
-    .climate-subtitle {
-      color: #8f979f;
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    .temperature-control {
-      display: flex;
-      align-items: center;
-      gap: 22px;
-    }
-
-    .temp-button {
-      width: 54px;
-      height: 54px;
-      border: 0;
-      border-radius: 50%;
-      background: rgba(255,255,255,.1);
-      color: white;
-      font-size: 28px;
-      cursor: pointer;
-    }
-
-    .temp-button:active {
-      transform: scale(.92);
-      background: rgba(255,255,255,.18);
-    }
-
-    .temperature {
-      min-width: 115px;
-      text-align: center;
-      font-size: 39px;
-      font-weight: 750;
-      letter-spacing: -1.5px;
-    }
-
-    .set-temp {
-      justify-self: end;
-      border: 0;
-      border-radius: 16px;
-      padding: 15px 24px;
-      background: #1ed760;
-      color: #07140b;
-      font-weight: 800;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .set-temp:active {
-      transform: scale(.96);
-    }
-
-    /* MESSAGE */
-
-    .message {
-      min-height: 22px;
-      text-align: center;
-      color: #8f979f;
-      font-size: 13px;
-    }
-
-    .message.success {
-      color: #1ed760;
-    }
-
-    .message.error {
-      color: #ff6b6b;
-    }
-
-    /* TABLET PORTRAIT */
-
-    @media (max-width: 850px) {
-      .app {
-        padding-left: 24px;
-        padding-right: 24px;
-      }
-
-      .player {
-        grid-template-columns: 1fr;
-        gap: 30px;
-        padding: 0;
-      }
-
-      .artwork-wrap {
-        max-width: 430px;
-      }
-
-      .player-info {
-        text-align: center;
-      }
-
-      .song-title {
-        font-size: 46px;
-      }
-
-      .artist {
-        font-size: 20px;
-        margin-bottom: 28px;
-      }
-
-      .volume {
-        text-align: left;
-      }
-
-      .climate {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-
-      .temperature-control {
-        justify-content: center;
-      }
-
-      .set-temp {
-        justify-self: center;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080a0d">
+<title>Pax Control</title>
+
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:#080a0d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif}
+body{min-height:100vh}
+button,input{font:inherit}
+
+.app{
+  min-height:100vh;
+  max-width:1400px;
+  margin:auto;
+  padding:max(24px,env(safe-area-inset-top)) 32px max(24px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 15% 0%,#20262d 0%,#0c0f13 38%,#07090b 78%);
+}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:13px;font-size:23px;font-weight:800}
+.logo{width:44px;height:44px;border-radius:50%;background:#1ed760;color:#06130a;display:grid;place-items:center;font-size:24px}
+.status{color:#aab1b8;display:flex;align-items:center;gap:9px;font-size:14px}
+.dot{width:9px;height:9px;border-radius:50%;background:#1ed760;box-shadow:0 0 14px #1ed760}
+
+.main{
+  display:grid;
+  grid-template-columns:minmax(300px,.82fr) minmax(440px,1.18fr);
+  gap:50px;
+  align-items:center;
+}
+
+.artwork{
+  width:100%;
+  max-width:475px;
+  aspect-ratio:1;
+  border-radius:27px;
+  margin:auto;
+  object-fit:cover;
+  background:linear-gradient(145deg,#222932,#0d1014);
+  box-shadow:0 30px 70px rgba(0,0,0,.55);
+}
+
+.info{min-width:0}
+.eyebrow{color:#1ed760;font-size:13px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:13px}
+.title{font-size:clamp(38px,5vw,65px);font-weight:850;letter-spacing:-2px;line-height:1.02;margin:0 0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{font-size:23px;color:#aeb5bd;margin-bottom:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.progressRow{display:flex;align-items:center;gap:12px;color:#899198;font-size:12px}
+.progress{height:5px;background:#343a40;border-radius:20px;overflow:hidden;flex:1}
+.progressFill{height:100%;width:0;background:#fff;border-radius:20px}
+
+.media{display:flex;justify-content:center;align-items:center;gap:32px;margin:25px 0}
+.media button{border:0;background:transparent;color:#fff;width:64px;height:64px;border-radius:50%;font-size:31px}
+.media .play{width:82px;height:82px;background:#fff;color:#000;font-size:34px}
+button:active{transform:scale(.92)}
+
+.volume{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;padding:16px 20px;
+}
+.volumeBtns{display:flex;gap:10px}
+.smallBtn,.tempBtn{
+  border:0;background:rgba(255,255,255,.1);color:#fff;
+  width:55px;height:48px;border-radius:14px;font-size:23px;
+}
+
+.searchBox{
+  margin-top:25px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:18px;
+}
+
+.searchBar{display:flex;gap:10px}
+.searchBar input{
+  flex:1;border:0;outline:0;border-radius:15px;
+  padding:14px 17px;background:#fff;color:#111;font-size:16px;
+}
+.searchButton{
+  border:0;border-radius:15px;padding:0 22px;
+  background:#1ed760;color:#07140b;font-weight:800;
+}
+
+.results{
+  max-height:245px;
+  overflow-y:auto;
+  margin-top:12px;
+}
+
+.track{
+  display:grid;
+  grid-template-columns:54px 1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:9px;
+  border-radius:13px;
+  cursor:pointer;
+}
+.track:active{background:rgba(255,255,255,.1)}
+.track img{width:54px;height:54px;border-radius:8px;object-fit:cover}
+.trackName{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trackArtist{font-size:13px;color:#999fa6;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trackPlay{color:#1ed760;font-size:22px;padding:10px}
+
+.climate{
+  margin-top:25px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+  padding:18px 26px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:20px;
+}
+.climateTitle{font-weight:750}
+.climateSub{color:#8f979f;font-size:13px;margin-top:4px}
+.tempControls{display:flex;align-items:center;gap:19px}
+.tempBtn{border-radius:50%;height:52px;width:52px}
+.temperature{font-size:37px;font-weight:800;min-width:105px;text-align:center}
+.setTemp{justify-self:end;border:0;border-radius:15px;padding:14px 22px;background:#1ed760;color:#06130a;font-weight:800}
+
+.message{height:22px;text-align:center;margin-top:10px;color:#999}
+.success{color:#1ed760}.error{color:#ff7373}
+
+@media(max-width:850px){
+ .main{grid-template-columns:1fr;gap:25px}
+ .artwork{max-width:400px}
+ .info{text-align:center}
+ .volume,.searchBox{text-align:left}
+ .climate{grid-template-columns:1fr;text-align:center}
+ .tempControls{justify-content:center}
+ .setTemp{justify-self:center}
+}
+</style>
 </head>
 
 <body>
-
 <div class="app">
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-icon">♪</div>
-      <div class="brand-name">Pax Control</div>
+<header class="topbar">
+  <div class="brand"><div class="logo">♪</div>Pax Control</div>
+  <div class="status"><span class="dot"></span>Spotify • Tesla</div>
+</header>
+
+<main class="main">
+
+  <img id="artwork" class="artwork" alt="Album artwork">
+
+  <section class="info">
+
+    <div class="eyebrow">Now Playing</div>
+    <h1 id="songTitle" class="title">Your Music</h1>
+    <div id="artistName" class="artist">Playing in your Tesla</div>
+
+    <div class="progressRow">
+      <span id="currentTime">0:00</span>
+      <div class="progress"><div id="progressFill" class="progressFill"></div></div>
+      <span id="duration">--:--</span>
     </div>
 
-    <div class="car-status">
-      <span class="status-dot"></span>
-      Passenger controls
+    <div class="media">
+      <button onclick="control('previous')">◀</button>
+      <button id="playButton" class="play" onclick="control('playPause')">▶</button>
+      <button onclick="control('next')">▶</button>
     </div>
-  </header>
 
-  <main class="player">
-
-    <section class="artwork-wrap">
-      <div class="artwork" id="albumArtwork">
-        <div class="artwork-placeholder"></div>
-      </div>
-    </section>
-
-    <section class="player-info">
-
-      <div class="eyebrow">Now Playing</div>
-
-      <!-- Spotify will populate these later -->
-      <h1 class="song-title" id="songTitle">
-        Your Music
-      </h1>
-
-      <div class="artist" id="artistName">
-        Playing in your Tesla
-      </div>
-
-      <div class="progress-row">
-        <span id="currentTime">0:00</span>
-
-        <div class="progress">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-
-        <span id="duration">--:--</span>
-      </div>
-
-      <div class="media-controls">
-
-        <button
-          class="media-button"
-          onclick="control('previous')"
-          aria-label="Previous track">
-          ◀
-        </button>
-
-        <button
-          class="media-button play-button"
-          onclick="control('playPause')"
-          aria-label="Play or pause">
-          ▶
-        </button>
-
-        <button
-          class="media-button"
-          onclick="control('next')"
-          aria-label="Next track">
-          ▶
-        </button>
-
-      </div>
-
-      <div class="volume">
-
-        <div class="volume-label">
-          🔊
-          <span>Cabin Volume</span>
-        </div>
-
-        <div class="volume-buttons">
-
-          <button
-            class="small-button"
-            onclick="control('volumeDown')"
-            aria-label="Volume down">
-            −
-          </button>
-
-          <button
-            class="small-button"
-            onclick="control('volumeUp')"
-            aria-label="Volume up">
-            +
-          </button>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  </main>
-
-  <section class="climate">
-
-    <div>
-      <div class="climate-title">
-        Cabin Climate
-      </div>
-
-      <div class="climate-subtitle">
-        Passenger comfort · 65–72°F
+    <div class="volume">
+      <strong>🔊 Cabin Volume</strong>
+      <div class="volumeBtns">
+        <button class="smallBtn" onclick="control('volumeDown')">−</button>
+        <button class="smallBtn" onclick="control('volumeUp')">+</button>
       </div>
     </div>
 
-    <div class="temperature-control">
-
-      <button
-        class="temp-button"
-        onclick="changeTemp(-1)">
-        −
-      </button>
-
-      <div
-        class="temperature"
-        id="temperature">
-        70°F
+    <div class="searchBox">
+      <div class="searchBar">
+        <input id="searchInput" type="search"
+               placeholder="Search songs or artists…"
+               onkeydown="if(event.key==='Enter') searchSpotify()">
+        <button class="searchButton" onclick="searchSpotify()">Search</button>
       </div>
-
-      <button
-        class="temp-button"
-        onclick="changeTemp(1)">
-        +
-      </button>
-
+      <div id="results" class="results"></div>
     </div>
-
-    <button
-      class="set-temp"
-      onclick="setTemperature()">
-      Set Temperature
-    </button>
 
   </section>
-<div style="text-align:center; margin: 8px 0;">
-  <button
-    class="set-temp"
-    onclick="testSpotifyTesla()">
-    🎵 Test Spotify → Tesla
-  </button>
-</div>
-  <div
-    class="message"
-    id="message">
+</main>
+
+<section class="climate">
+  <div>
+    <div class="climateTitle">Cabin Climate</div>
+    <div class="climateSub">Passenger comfort · 65–72°F</div>
   </div>
+
+  <div class="tempControls">
+    <button class="tempBtn" onclick="changeTemp(-1)">−</button>
+    <div id="temperature" class="temperature">70°F</div>
+    <button class="tempBtn" onclick="changeTemp(1)">+</button>
+  </div>
+
+  <button class="setTemp" onclick="setTemperature()">Set Temperature</button>
+</section>
+
+<div id="message" class="message"></div>
 
 </div>
 
 <script>
+const MIN_TEMP=65;
+const MAX_TEMP=72;
+let selectedTemperature=70;
+let progressMs=0;
+let durationMs=0;
+let playing=false;
+let progressTimer=null;
 
-  const MIN_TEMP = 65;
-  const MAX_TEMP = 72;
+const message=document.getElementById("message");
 
-  let selectedTemperature = 70;
-
-  const message =
-    document.getElementById("message");
-
-  function showMessage(text, type = "") {
-    message.textContent = text;
-    message.className =
-      "message " + type;
-
-    if (text) {
-      setTimeout(() => {
-        if (message.textContent === text) {
-          message.textContent = "";
-          message.className = "message";
-        }
-      }, 3500);
-    }
-  }
-
-  async function sendRequest(body) {
-
-    try {
-
-      const response =
-        await fetch(
-          "/api/control",
-          {
-            method: "POST",
-
-            credentials: "same-origin",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body:
-              JSON.stringify(body)
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-
-        if (response.status === 401) {
-          throw new Error(
-            "This iPad is not authorized for passenger controls."
-          );
-        }
-
-        throw new Error(
-          data.error ||
-          "Command failed."
-        );
+function showMessage(text,type=""){
+  message.textContent=text;
+  message.className="message "+type;
+  if(text){
+    setTimeout(()=>{
+      if(message.textContent===text){
+        message.textContent="";
+        message.className="message";
       }
-
-      return data;
-
-    } catch (error) {
-
-      showMessage(
-        error.message,
-        "error"
-      );
-
-      throw error;
-    }
-  }
-
-  async function control(action) {
-
-    try {
-
-      await sendRequest({
-        action
-      });
-
-      showMessage(
-        "Command sent",
-        "success"
-      );
-
-    } catch {
-      // Message already shown
-    }
-  }
-
-  function changeTemp(amount) {
-
-    selectedTemperature += amount;
-
-    if (
-      selectedTemperature <
-      MIN_TEMP
-    ) {
-      selectedTemperature =
-        MIN_TEMP;
-    }
-
-    if (
-      selectedTemperature >
-      MAX_TEMP
-    ) {
-      selectedTemperature =
-        MAX_TEMP;
-    }
-
-    document
-      .getElementById(
-        "temperature"
-      )
-      .textContent =
-        selectedTemperature +
-        "°F";
-  }
-
-  async function setTemperature() {
-
-    try {
-
-      await sendRequest({
-        action:
-          "temperature",
-
-        temperatureF:
-          selectedTemperature
-      });
-
-      showMessage(
-        `Cabin set to ${selectedTemperature}°F`,
-        "success"
-      );
-
-    } catch {
-      // Message already shown
-    }
-  }
-async function testSpotifyTesla() {
-  showMessage(
-    "Sending Spotify test...",
-    ""
-  );
-
-  try {
-    const response =
-      await fetch(
-        "/api/spotify/test-tesla-playback",
-        {
-          method: "POST",
-          credentials: "same-origin"
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error ||
-        "Spotify playback test failed."
-      );
-    }
-
-    showMessage(
-      "Spotify command sent to Tesla!",
-      "success"
-    );
-
-  } catch (error) {
-    showMessage(
-      error.message,
-      "error"
-    );
+    },3000);
   }
 }
+
+async function api(url,options={}){
+  const response=await fetch(url,{
+    credentials:"same-origin",
+    ...options
+  });
+
+  let data={};
+  try{data=await response.json();}catch{}
+
+  if(!response.ok){
+    throw new Error(data.error||"Request failed.");
+  }
+  return data;
+}
+
+async function control(action){
+  try{
+    await api("/api/control",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action})
+    });
+
+    if(action==="playPause"){
+      playing=!playing;
+      updatePlayButton();
+    }
+
+    setTimeout(loadNowPlaying,700);
+  }catch(e){
+    showMessage(e.message,"error");
+  }
+}
+
+function changeTemp(amount){
+  selectedTemperature=Math.max(
+    MIN_TEMP,
+    Math.min(MAX_TEMP,selectedTemperature+amount)
+  );
+  document.getElementById("temperature").textContent=
+    selectedTemperature+"°F";
+}
+
+async function setTemperature(){
+  try{
+    await api("/api/control",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"temperature",
+        temperatureF:selectedTemperature
+      })
+    });
+    showMessage(`Cabin set to ${selectedTemperature}°F`,"success");
+  }catch(e){
+    showMessage(e.message,"error");
+  }
+}
+
+function formatTime(ms){
+  if(!Number.isFinite(ms)||ms<0)return "0:00";
+  const total=Math.floor(ms/1000);
+  const min=Math.floor(total/60);
+  const sec=String(total%60).padStart(2,"0");
+  return `${min}:${sec}`;
+}
+
+function updateProgress(){
+  document.getElementById("currentTime").textContent=formatTime(progressMs);
+  document.getElementById("duration").textContent=
+    durationMs?formatTime(durationMs):"--:--";
+
+  const pct=durationMs?
+    Math.min(100,(progressMs/durationMs)*100):0;
+
+  document.getElementById("progressFill").style.width=pct+"%";
+}
+
+function updatePlayButton(){
+  document.getElementById("playButton").textContent=
+    playing?"❚❚":"▶";
+}
+
+async function loadNowPlaying(){
+  try{
+    const data=await api("/api/spotify/now-playing");
+
+    if(!data.item){
+      playing=false;
+      updatePlayButton();
+      return;
+    }
+
+    playing=data.playing;
+    progressMs=data.progressMs||0;
+    durationMs=data.item.durationMs||0;
+
+    document.getElementById("songTitle").textContent=
+      data.item.name||"Unknown Track";
+
+    document.getElementById("artistName").textContent=
+      data.item.artist||"Unknown Artist";
+
+    const artwork=document.getElementById("artwork");
+
+    if(data.item.artwork){
+      artwork.src=data.item.artwork;
+    }
+
+    updatePlayButton();
+    updateProgress();
+
+  }catch(e){
+    console.log("Now playing unavailable:",e.message);
+  }
+}
+
+async function searchSpotify(){
+  const input=document.getElementById("searchInput");
+  const results=document.getElementById("results");
+  const query=input.value.trim();
+
+  if(!query)return;
+
+  results.innerHTML="<div style='padding:15px;color:#999'>Searching…</div>";
+
+  try{
+    const data=await api(
+      "/api/spotify/search?q="+encodeURIComponent(query)
+    );
+
+    results.innerHTML="";
+
+    if(!data.tracks?.length){
+      results.innerHTML=
+        "<div style='padding:15px;color:#999'>No tracks found.</div>";
+      return;
+    }
+
+    for(const track of data.tracks){
+      const row=document.createElement("div");
+      row.className="track";
+
+      const img=document.createElement("img");
+      if(track.artwork)img.src=track.artwork;
+      img.alt="";
+
+      const info=document.createElement("div");
+
+      const name=document.createElement("div");
+      name.className="trackName";
+      name.textContent=track.name;
+
+      const artist=document.createElement("div");
+      artist.className="trackArtist";
+      artist.textContent=track.artist;
+
+      info.append(name,artist);
+
+      const play=document.createElement("div");
+      play.className="trackPlay";
+      play.textContent="▶";
+
+      row.append(img,info,play);
+
+      row.onclick=()=>playTrack(track);
+
+      results.appendChild(row);
+    }
+
+  }catch(e){
+    results.innerHTML="";
+    showMessage(e.message,"error");
+  }
+}
+
+async function playTrack(track){
+  showMessage(`Playing ${track.name}…`);
+
+  try{
+    await api("/api/spotify/play",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({uri:track.uri})
+    });
+
+    playing=true;
+    updatePlayButton();
+
+    showMessage(`Playing ${track.name}`,"success");
+
+    setTimeout(loadNowPlaying,1000);
+
+  }catch(e){
+    showMessage(e.message,"error");
+  }
+}
+
+/* Locally animate progress between Spotify updates */
+setInterval(()=>{
+  if(playing && durationMs){
+    progressMs=Math.min(durationMs,progressMs+1000);
+    updateProgress();
+  }
+},1000);
+
+/* Refresh Spotify metadata periodically */
+loadNowPlaying();
+setInterval(loadNowPlaying,5000);
 </script>
 
 </body>
