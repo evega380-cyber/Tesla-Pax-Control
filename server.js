@@ -559,7 +559,32 @@ async function sendTeslaCommand(command, body = {}) {
   });
 }
 
+app.get("/api/test-vehicle", async (req, res) => {
+  try {
+    const accessToken = await getTeslaAccessToken();
 
+    const response = await fetch(
+      `${TESLA_AUDIENCE}/api/1/vehicles/${encodeURIComponent(VIN)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const text = await response.text();
+
+    res.status(response.status).json({
+      status: response.status,
+      teslaResponse: text
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
 /*
  * -------------------------------------------------------
  * PASSENGER COMMAND ENDPOINT
