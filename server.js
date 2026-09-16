@@ -447,7 +447,7 @@ app.get(
       authorizationStored,
 
       commandProxyConfigured:
-        false,
+        true,
 
       limits: {
         minTempF: MIN_TEMP_F,
@@ -459,25 +459,212 @@ app.get(
 
 /*
  * -------------------------------------------------------
+ * TESLA SIGNED COMMAND PROXY
+ * -------------------------------------------------------
+ */
+
+const TESLA_PROXY_URL = "https://127.0.0.1:4443";
+const TESLA_PROXY_CERT = "/data/tesla-proxy/tls-cert.pem";
+
+async function sendTeslaCommand(command, body = {}) {
+  if (!VIN) {
+    throw new Error("TESLA_VIN is not configured.");
+  }
+
+  const accessToken = await getTeslaAccessToken();
+
+  /*
+   * Trust ONLY our locally generated Tesla proxy certificate.
+   * We do not disable TLS verification globally.
+   */
+  const https = await import("https");
+  const fsSync = await import("fs");
+
+  const ca = fsSync.readFileSync(TESLA_PROXY_CERT);
+
+  const agent = new https.Agent({
+    ca,
+    rejectUnauthorized: true
+  });
+
+  const url =
+    `${TESLA_PROXY_URL}/api/1/vehicles/` +
+    `${encodeURIComponent(VIN)}/command/` +
+    `${command}`;
+
+  /*
+   * Node's built-in fetch does not accept https.Agent,
+   * so use https.request for this localhost TLS connection.
+   */
+  return await new Promise((resolve, reject) => {
+    const payload = JSON.stringify(body);
+
+    const request = https.request(
+      url,
+      {
+        method: "POST",
+        agent,
+
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "Content-Length":
+            Buffer.byteLength(payload)
+        }
+      },
+
+      (response) => {
+        let raw = "";
+
+        response.on("data", (chunk) => {
+          raw += chunk;
+        });
+
+        response.on("end", () => {
+          let data = {};
+
+          if (raw) {
+            try {
+              data = JSON.parse(raw);
+            } catch {
+              data = { raw };
+            }
+          }
+
+          if (
+            response.statusCode >= 200 &&
+            response.statusCode < 300
+          ) {
+            return resolve(data);
+          }
+
+          const error = new Error(
+            data?.error_description ||
+            data?.error ||
+            `Tesla command failed (${response.statusCode})`
+          );
+
+          error.statusCode = response.statusCode;
+          error.teslaResponse = data;
+
+          reject(error);
+        });
+      }
+    );
+
+    request.on("error", reject);
+
+    request.write(payload);
+    request.end();
+  });
+}
+
+
+/*
+ * -------------------------------------------------------
  * PASSENGER COMMAND ENDPOINT
- *
- * Deliberately disabled until Tesla's
- * signed Vehicle Command Proxy is installed.
  * -------------------------------------------------------
  */
 
 app.post(
   "/api/control",
-  (_req, res) => {
-    res.status(503).json({
-      ok: false,
+  async (req, res) => {
+    try {
+      const { action, temperatureF } = req.body || {};
 
-      error:
-        "Vehicle command signing is not configured yet."
-    });
+      const commands = {
+        previous: "media_prev_track",
+        playPause: "media_toggle_playback",
+        next: "media_next_track",
+        volumeDown: "media_volume_down",
+        volumeUp: "media_volume_up"
+      };
+
+      /*
+       * MEDIA CONTROLS
+       */
+      if (commands[action]) {
+        const result = await sendTeslaCommand(
+          commands[action],
+          {}
+        );
+
+        return res.json({
+          ok: true,
+          action,
+          tesla: result
+        });
+      }
+
+      /*
+       * TEMPERATURE CONTROL
+       */
+      if (action === "temperature") {
+        const tempF = Number(temperatureF);
+
+        if (
+          !Number.isFinite(tempF) ||
+          tempF < MIN_TEMP_F ||
+          tempF > MAX_TEMP_F
+        ) {
+          return res.status(400).json({
+            ok: false,
+            error:
+              `Temperature must be between ` +
+              `${MIN_TEMP_F}°F and ${MAX_TEMP_F}°F.`
+          });
+        }
+
+        /*
+         * Tesla's set_temps endpoint expects Celsius.
+         */
+        const tempC =
+          Number(
+            (((tempF - 32) * 5) / 9).toFixed(1)
+          );
+
+        const result = await sendTeslaCommand(
+          "set_temps",
+          {
+            driver_temp: tempC,
+            passenger_temp: tempC
+          }
+        );
+
+        return res.json({
+          ok: true,
+          action: "temperature",
+          temperatureF: tempF,
+          temperatureC: tempC,
+          tesla: result
+        });
+      }
+
+      /*
+       * Anything else is rejected.
+       */
+      return res.status(400).json({
+        ok: false,
+        error: "Unsupported passenger command."
+      });
+
+    } catch (error) {
+      console.error(
+        "Tesla command error:",
+        error.message
+      );
+
+      return res
+        .status(error.statusCode || 500)
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Tesla command failed."
+        });
+    }
   }
 );
-
 /*
  * -------------------------------------------------------
  * PASSENGER WEB APP
