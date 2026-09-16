@@ -1773,6 +1773,61 @@ app.get(
     }
   }
 );
+app.get(
+  "/api/test-telemetry-status",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const accessToken = await getTeslaAccessToken();
+
+      const response = await fetch(
+        `${TESLA_AUDIENCE}/api/1/vehicles/fleet_status`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            vins: [VIN]
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+
+      const vehicle =
+        data?.response?.vehicles?.[0] ||
+        data?.response?.[0] ||
+        data?.response;
+
+      return res.json({
+        ok: true,
+        fleetTelemetryVersion:
+          vehicle?.fleet_telemetry_version ?? null,
+        firmwareVersion:
+          vehicle?.firmware_version ?? null,
+        telemetryAvailable:
+          Boolean(vehicle?.fleet_telemetry_version)
+      });
+
+    } catch (error) {
+      console.error(
+        "Telemetry status test error:",
+        error.message
+      );
+
+      return res.status(500).json({
+        ok: false,
+        error: error.message
+      });
+    }
+  }
+);
 /*
  * -------------------------------------------------------
  * PASSENGER TESLA COMMANDS
