@@ -1226,6 +1226,89 @@ app.post(
 );
 /*
  * -------------------------------------------------------
+ * SPOTIFY SEARCH
+ * -------------------------------------------------------
+ */
+
+app.get(
+  "/api/spotify/search",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const query =
+        String(req.query.q || "")
+          .trim()
+          .slice(0, 100);
+
+      if (!query) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Enter something to search for."
+          });
+      }
+
+      const data =
+        await spotifyRequest(
+          `/search?type=track&limit=10&q=${encodeURIComponent(query)}`
+        );
+
+      const tracks =
+        (data?.tracks?.items || [])
+          .map(track => ({
+            name: track.name,
+
+            artist:
+              track.artists
+                ?.map(
+                  artist =>
+                    artist.name
+                )
+                .join(", ") || "",
+
+            album:
+              track.album?.name || "",
+
+            artwork:
+              track.album
+                ?.images?.[1]?.url ||
+              track.album
+                ?.images?.[0]?.url ||
+              null,
+
+            uri: track.uri,
+
+            durationMs:
+              track.duration_ms || 0
+          }));
+
+      return res.json({
+        tracks
+      });
+
+    } catch (error) {
+      console.error(
+        "Spotify search error:",
+        error.message
+      );
+
+      return res
+        .status(
+          error.statusCode || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Spotify search failed."
+        });
+    }
+  }
+);
+/*
+ * -------------------------------------------------------
  * STATUS
  * -------------------------------------------------------
  */
