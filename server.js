@@ -721,7 +721,71 @@ const __filename =
 
 const __dirname =
   path.dirname(__filename);
+app.get("/admin/register-partner", async (req, res) => {
+  try {
+    if (!process.env.ADMIN_SECRET ||
+        req.query.secret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
 
+    const tokenResponse = await fetch(
+      "https://fleet-auth.prd.vn.cloud.tesla.com/oauth2/v3/token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          audience: TESLA_AUDIENCE,
+          scope: "openid vehicle_device_data vehicle_cmds"
+        })
+      }
+    );
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok) {
+      return res.status(tokenResponse.status).json({
+        ok: false,
+        stage: "token",
+        tesla: tokenData
+      });
+    }
+
+    const registrationResponse = await fetch(
+      `${TESLA_AUDIENCE}/api/1/partner_accounts`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          domain: "tesla-pax-control-production.up.railway.app"
+        })
+      }
+    );
+
+    const registrationText = await registrationResponse.text();
+
+    return res.status(registrationResponse.status).json({
+      ok: registrationResponse.ok,
+      stage: "registration",
+      status: registrationResponse.status,
+      tesla: registrationText
+    });
+
+  } catch (error) {
+    console.error("Partner registration error:", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: error.message
+    });
+  }
+});
 app.get(
   "/{*splat}",
   (_req, res) => {
