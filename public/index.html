@@ -574,7 +574,13 @@
     </button>
 
   </section>
-
+<div style="text-align:center; margin: 8px 0;">
+  <button
+    class="set-temp"
+    onclick="testSpotifyTesla()">
+    🎵 Test Spotify → Tesla
+  </button>
+</div>
   <div
     class="message"
     id="message">
@@ -727,7 +733,44 @@
       // Message already shown
     }
   }
+async function testSpotifyTesla() {
+  showMessage(
+    "Sending Spotify test...",
+    ""
+  );
 
+  try {
+    const response =
+      await fetch(
+        "/api/spotify/test-tesla-playback",
+        {
+          method: "POST",
+          credentials: "same-origin"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        "Spotify playback test failed."
+      );
+    }
+
+    showMessage(
+      "Spotify command sent to Tesla!",
+      "success"
+    );
+
+  } catch (error) {
+    showMessage(
+      error.message,
+      "error"
+    );
+  }
+}
 </script>
 
 </body>
