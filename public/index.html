@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-  <title>Edwin's Tesla — Passenger Controls</title>
+  <meta name="theme-color" content="#080a0d" />
+
+  <title>Pax Control</title>
 
   <style>
     * {
@@ -15,135 +15,416 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
+    html, body {
       margin: 0;
-      background: #101010;
+      width: 100%;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 20% 0%, #20252b 0%, #0d1014 35%, #07090b 75%);
       color: white;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+    }
+
+    body {
       min-height: 100vh;
-    }
-
-    .container {
-      width: min(900px, 92%);
-      margin: auto;
-      padding: 55px 0 70px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 45px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(38px, 6vw, 58px);
-    }
-
-    .subtitle {
-      margin-top: 10px;
-      color: #aaa;
-      font-size: 25px;
-    }
-
-    .card {
-      background: #1c1c1e;
-      border-radius: 35px;
-      padding: 35px;
-      margin-bottom: 30px;
-    }
-
-    .card h2 {
-      margin: 0 0 30px;
-      font-size: 32px;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
+      overflow-x: hidden;
     }
 
     button {
-      border: 0;
-      border-radius: 28px;
-      min-height: 150px;
-      background: #303033;
-      color: white;
-      font-size: 27px;
-      font-weight: 700;
-      cursor: pointer;
-      touch-action: manipulation;
+      font: inherit;
     }
 
-    button:active {
-      transform: scale(0.97);
-      background: #3c3c3f;
+    .app {
+      min-height: 100vh;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding:
+        max(28px, env(safe-area-inset-top))
+        34px
+        max(28px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
     }
 
-    button:disabled {
-      opacity: 0.45;
-    }
+    /* HEADER */
 
-    .icon {
-      display: block;
-      font-size: 40px;
-      margin-bottom: 8px;
-    }
-
-    .temperature {
-      display: grid;
-      grid-template-columns: 1fr 2fr 1fr;
-      gap: 20px;
+    .topbar {
+      display: flex;
       align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #1ed760;
+      display: grid;
+      place-items: center;
+      color: #07140b;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .brand-name {
+      font-size: 23px;
+      font-weight: 750;
+      letter-spacing: -0.5px;
+    }
+
+    .car-status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #aeb5bd;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #1ed760;
+      box-shadow: 0 0 14px rgba(30, 215, 96, .7);
+    }
+
+    /* MAIN PLAYER */
+
+    .player {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(320px, .85fr) minmax(400px, 1.15fr);
+      gap: 55px;
+      align-items: center;
+      padding: 12px 30px;
+    }
+
+    .artwork-wrap {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .artwork {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 28px;
+      background:
+        linear-gradient(145deg, #222932, #0c0f13);
+      box-shadow:
+        0 35px 80px rgba(0,0,0,.55),
+        0 5px 20px rgba(0,0,0,.4);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .artwork-placeholder {
+      width: 45%;
+      height: 45%;
+      border-radius: 50%;
+      border: 13px solid rgba(255,255,255,.09);
+      position: relative;
+    }
+
+    .artwork-placeholder::after {
+      content: "";
+      position: absolute;
+      width: 30%;
+      height: 30%;
+      border-radius: 50%;
+      background: rgba(255,255,255,.1);
+      left: 35%;
+      top: 35%;
+    }
+
+    .player-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      color: #1ed760;
+      text-transform: uppercase;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.8px;
+      margin-bottom: 16px;
+    }
+
+    .song-title {
+      font-size: clamp(38px, 5vw, 70px);
+      line-height: 1;
+      letter-spacing: -2.5px;
+      font-weight: 800;
+      margin: 0 0 14px;
+    }
+
+    .artist {
+      color: #aeb5bd;
+      font-size: 24px;
+      margin-bottom: 40px;
+    }
+
+    /* PROGRESS */
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      color: #8e969f;
+      font-size: 12px;
+      margin-bottom: 27px;
+    }
+
+    .progress {
+      flex: 1;
+      height: 5px;
+      border-radius: 20px;
+      background: #343a40;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: white;
+      border-radius: inherit;
+    }
+
+    /* MEDIA BUTTONS */
+
+    .media-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 36px;
+    }
+
+    .media-button {
+      border: 0;
+      color: white;
+      background: transparent;
+      cursor: pointer;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      transition: transform .12s ease, background .12s ease;
+    }
+
+    .media-button:active {
+      transform: scale(.88);
+      background: rgba(255,255,255,.08);
+    }
+
+    .play-button {
+      width: 88px;
+      height: 88px;
+      background: white;
+      color: black;
+      font-size: 37px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.3);
+    }
+
+    .play-button:active {
+      background: #e8e8e8;
+    }
+
+    /* VOLUME */
+
+    .volume {
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 22px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(18px);
+    }
+
+    .volume-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #c4cad0;
+      font-weight: 650;
+    }
+
+    .volume-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .small-button {
+      width: 58px;
+      height: 48px;
+      border-radius: 14px;
+      border: 0;
+      background: rgba(255,255,255,.1);
+      color: white;
+      font-size: 23px;
+      cursor: pointer;
+    }
+
+    .small-button:active {
+      background: rgba(255,255,255,.2);
+      transform: scale(.94);
+    }
+
+    /* CLIMATE */
+
+    .climate {
+      border-radius: 26px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(22px);
+      padding: 20px 27px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .climate-title {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .climate-subtitle {
+      color: #8f979f;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .temperature-control {
+      display: flex;
+      align-items: center;
+      gap: 22px;
     }
 
     .temp-button {
-      min-height: 140px;
-      font-size: 55px;
+      width: 54px;
+      height: 54px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,.1);
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
     }
 
-    #temperature {
+    .temp-button:active {
+      transform: scale(.92);
+      background: rgba(255,255,255,.18);
+    }
+
+    .temperature {
+      min-width: 115px;
       text-align: center;
-      font-size: clamp(65px, 11vw, 100px);
-      font-weight: 700;
+      font-size: 39px;
+      font-weight: 750;
+      letter-spacing: -1.5px;
     }
 
-    #status {
-      min-height: 35px;
-      margin-top: 25px;
+    .set-temp {
+      justify-self: end;
+      border: 0;
+      border-radius: 16px;
+      padding: 15px 24px;
+      background: #1ed760;
+      color: #07140b;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .set-temp:active {
+      transform: scale(.96);
+    }
+
+    /* MESSAGE */
+
+    .message {
+      min-height: 22px;
       text-align: center;
-      font-size: 20px;
-      color: #aaa;
+      color: #8f979f;
+      font-size: 13px;
     }
 
-    #status.success {
-      color: #8ee28e;
+    .message.success {
+      color: #1ed760;
     }
 
-    #status.error {
-      color: #ff8b8b;
+    .message.error {
+      color: #ff6b6b;
     }
 
-    @media (max-width: 600px) {
-      .container {
-        padding-top: 35px;
+    /* TABLET PORTRAIT */
+
+    @media (max-width: 850px) {
+      .app {
+        padding-left: 24px;
+        padding-right: 24px;
       }
 
-      .card {
-        padding: 25px;
+      .player {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        padding: 0;
       }
 
-      button {
-        min-height: 125px;
-        font-size: 21px;
+      .artwork-wrap {
+        max-width: 430px;
       }
 
-      .icon {
-        font-size: 32px;
+      .player-info {
+        text-align: center;
       }
 
-      .temp-button {
-        min-height: 120px;
+      .song-title {
+        font-size: 46px;
+      }
+
+      .artist {
+        font-size: 20px;
+        margin-bottom: 28px;
+      }
+
+      .volume {
+        text-align: left;
+      }
+
+      .climate {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .temperature-control {
+        justify-content: center;
+      }
+
+      .set-temp {
+        justify-self: center;
       }
     }
   </style>
@@ -151,150 +432,192 @@
 
 <body>
 
-  <main class="container">
+<div class="app">
 
-    <header>
-      <h1>🚘 Edwin's Tesla</h1>
-      <div class="subtitle">Passenger Controls</div>
-    </header>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">♪</div>
+      <div class="brand-name">Pax Control</div>
+    </div>
 
+    <div class="car-status">
+      <span class="status-dot"></span>
+      Passenger controls
+    </div>
+  </header>
 
-    <section class="card">
+  <main class="player">
 
-      <h2>🎵 Music</h2>
-
-      <div class="controls">
-
-        <button onclick="sendAction('previous')">
-          <span class="icon">⏮️</span>
-          Previous
-        </button>
-
-        <button onclick="sendAction('playPause')">
-          <span class="icon">⏯️</span>
-          Play / Pause
-        </button>
-
-        <button onclick="sendAction('next')">
-          <span class="icon">⏭️</span>
-          Next
-        </button>
-
+    <section class="artwork-wrap">
+      <div class="artwork" id="albumArtwork">
+        <div class="artwork-placeholder"></div>
       </div>
-
     </section>
 
+    <section class="player-info">
 
-    <section class="card">
+      <div class="eyebrow">Now Playing</div>
 
-      <h2>🔊 Volume</h2>
+      <!-- Spotify will populate these later -->
+      <h1 class="song-title" id="songTitle">
+        Your Music
+      </h1>
 
-      <div class="controls">
-
-        <button onclick="sendAction('volumeDown')">
-          <span class="icon">🔉</span>
-          Volume −
-        </button>
-
-        <button onclick="sendAction('playPause')">
-          <span class="icon">⏯️</span>
-          Play / Pause
-        </button>
-
-        <button onclick="sendAction('volumeUp')">
-          <span class="icon">🔊</span>
-          Volume +
-        </button>
-
+      <div class="artist" id="artistName">
+        Playing in your Tesla
       </div>
 
-    </section>
+      <div class="progress-row">
+        <span id="currentTime">0:00</span>
 
-
-    <section class="card">
-
-      <h2>🌡️ Cabin Temperature</h2>
-
-      <div class="temperature">
-
-        <button
-          class="temp-button"
-          onclick="changeTemperature(-1)"
-        >
-          −
-        </button>
-
-        <div id="temperature">
-          70°F
+        <div class="progress">
+          <div class="progress-fill" id="progressFill"></div>
         </div>
 
+        <span id="duration">--:--</span>
+      </div>
+
+      <div class="media-controls">
+
         <button
-          class="temp-button"
-          onclick="changeTemperature(1)"
-        >
-          +
+          class="media-button"
+          onclick="control('previous')"
+          aria-label="Previous track">
+          ◀
+        </button>
+
+        <button
+          class="media-button play-button"
+          onclick="control('playPause')"
+          aria-label="Play or pause">
+          ▶
+        </button>
+
+        <button
+          class="media-button"
+          onclick="control('next')"
+          aria-label="Next track">
+          ▶
         </button>
 
       </div>
 
+      <div class="volume">
+
+        <div class="volume-label">
+          🔊
+          <span>Cabin Volume</span>
+        </div>
+
+        <div class="volume-buttons">
+
+          <button
+            class="small-button"
+            onclick="control('volumeDown')"
+            aria-label="Volume down">
+            −
+          </button>
+
+          <button
+            class="small-button"
+            onclick="control('volumeUp')"
+            aria-label="Volume up">
+            +
+          </button>
+
+        </div>
+
+      </div>
+
     </section>
-
-
-    <div id="status">
-      Ready
-    </div>
 
   </main>
 
+  <section class="climate">
 
-  <script>
+    <div>
+      <div class="climate-title">
+        Cabin Climate
+      </div>
 
-    const MIN_TEMP = 65;
-    const MAX_TEMP = 72;
+      <div class="climate-subtitle">
+        Passenger comfort · 65–72°F
+      </div>
+    </div>
 
-    let temperature = 70;
-    let commandInProgress = false;
+    <div class="temperature-control">
 
+      <button
+        class="temp-button"
+        onclick="changeTemp(-1)">
+        −
+      </button>
 
-    function setStatus(message, type = "") {
+      <div
+        class="temperature"
+        id="temperature">
+        70°F
+      </div>
 
-      const status =
-        document.getElementById("status");
+      <button
+        class="temp-button"
+        onclick="changeTemp(1)">
+        +
+      </button>
 
-      status.textContent = message;
-      status.className = type;
+    </div>
 
+    <button
+      class="set-temp"
+      onclick="setTemperature()">
+      Set Temperature
+    </button>
+
+  </section>
+
+  <div
+    class="message"
+    id="message">
+  </div>
+
+</div>
+
+<script>
+
+  const MIN_TEMP = 65;
+  const MAX_TEMP = 72;
+
+  let selectedTemperature = 70;
+
+  const message =
+    document.getElementById("message");
+
+  function showMessage(text, type = "") {
+    message.textContent = text;
+    message.className =
+      "message " + type;
+
+    if (text) {
+      setTimeout(() => {
+        if (message.textContent === text) {
+          message.textContent = "";
+          message.className = "message";
+        }
+      }, 3500);
     }
+  }
 
+  async function sendRequest(body) {
 
-    function setButtonsDisabled(disabled) {
+    try {
 
-      document
-        .querySelectorAll("button")
-        .forEach(button => {
-          button.disabled = disabled;
-        });
-
-    }
-
-
-    async function sendRequest(payload) {
-
-      if (commandInProgress) {
-        return;
-      }
-
-      commandInProgress = true;
-      setButtonsDisabled(true);
-
-      setStatus("Sending command…");
-
-      try {
-
-        const response = await fetch(
+      const response =
+        await fetch(
           "/api/control",
           {
             method: "POST",
+
+            credentials: "same-origin",
 
             headers: {
               "Content-Type":
@@ -302,94 +625,110 @@
             },
 
             body:
-              JSON.stringify(payload)
+              JSON.stringify(body)
           }
         );
 
+      const data =
+        await response.json();
 
-        const data =
-          await response.json();
+      if (!response.ok) {
 
-
-        if (!response.ok || !data.ok) {
-
+        if (response.status === 401) {
           throw new Error(
-            data.error ||
-            "Command failed."
+            "This iPad is not authorized for passenger controls."
           );
-
         }
 
-
-        setStatus(
-          "Command sent ✓",
-          "success"
+        throw new Error(
+          data.error ||
+          "Command failed."
         );
-
-
-      } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-          error.message ||
-          "Unable to send command.",
-          "error"
-        );
-
-      } finally {
-
-        commandInProgress = false;
-        setButtonsDisabled(false);
-
       }
 
+      return data;
+
+    } catch (error) {
+
+      showMessage(
+        error.message,
+        "error"
+      );
+
+      throw error;
     }
+  }
 
+  async function control(action) {
 
-    function sendAction(action) {
+    try {
 
-      sendRequest({
+      await sendRequest({
         action
       });
 
+      showMessage(
+        "Command sent",
+        "success"
+      );
+
+    } catch {
+      // Message already shown
+    }
+  }
+
+  function changeTemp(amount) {
+
+    selectedTemperature += amount;
+
+    if (
+      selectedTemperature <
+      MIN_TEMP
+    ) {
+      selectedTemperature =
+        MIN_TEMP;
     }
 
+    if (
+      selectedTemperature >
+      MAX_TEMP
+    ) {
+      selectedTemperature =
+        MAX_TEMP;
+    }
 
-    function changeTemperature(change) {
-
-      const newTemperature =
-        temperature + change;
-
-
-      if (
-        newTemperature < MIN_TEMP ||
-        newTemperature > MAX_TEMP
-      ) {
-
-        return;
-
-      }
-
-
-      temperature =
-        newTemperature;
-
-
-      document.getElementById(
+    document
+      .getElementById(
         "temperature"
-      ).textContent =
-        `${temperature}°F`;
+      )
+      .textContent =
+        selectedTemperature +
+        "°F";
+  }
 
+  async function setTemperature() {
 
-      sendRequest({
-        action: "temperature",
-        temperatureF: temperature
+    try {
+
+      await sendRequest({
+        action:
+          "temperature",
+
+        temperatureF:
+          selectedTemperature
       });
 
-    }
+      showMessage(
+        `Cabin set to ${selectedTemperature}°F`,
+        "success"
+      );
 
-  </script>
+    } catch {
+      // Message already shown
+    }
+  }
+
+</script>
 
 </body>
 </html>
