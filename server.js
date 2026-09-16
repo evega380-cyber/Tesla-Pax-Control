@@ -1797,22 +1797,34 @@ app.get(
       const data = await response.json();
 
       if (!response.ok) {
-        return res.status(response.status).json(data);
+        return res.status(response.status).json({
+          ok: false,
+          error: data?.error || "Tesla request failed",
+          errorDescription: data?.error_description || null
+        });
       }
 
-      const vehicle =
-        data?.response?.vehicles?.[0] ||
-        data?.response?.[0] ||
-        data?.response;
-
+      // Show only the structure and safe capability fields.
+      // Do NOT return VIN, location, destination, battery, etc.
       return res.json({
         ok: true,
-        fleetTelemetryVersion:
-          vehicle?.fleet_telemetry_version ?? null,
-        firmwareVersion:
-          vehicle?.firmware_version ?? null,
-        telemetryAvailable:
-          Boolean(vehicle?.fleet_telemetry_version)
+        responseType: Array.isArray(data?.response)
+          ? "array"
+          : typeof data?.response,
+
+        responseKeys:
+          data?.response &&
+          !Array.isArray(data.response) &&
+          typeof data.response === "object"
+            ? Object.keys(data.response)
+            : [],
+
+        firstItemKeys:
+          Array.isArray(data?.response) &&
+          data.response[0] &&
+          typeof data.response[0] === "object"
+            ? Object.keys(data.response[0])
+            : []
       });
 
     } catch (error) {
