@@ -1140,7 +1140,90 @@ app.get(
     }
   }
 );
+/*
+ * -------------------------------------------------------
+ * TEMPORARY SPOTIFY TESLA PLAYBACK TEST
+ * -------------------------------------------------------
+ */
 
+app.post(
+  "/api/spotify/test-tesla-playback",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      // Find the Tesla without exposing its Spotify device ID.
+      const deviceData =
+        await spotifyRequest(
+          "/me/player/devices"
+        );
+
+      const tesla =
+        (deviceData?.devices || [])
+          .find(device =>
+            device.type
+              ?.toLowerCase() ===
+              "automobile" ||
+            device.name
+              ?.toLowerCase()
+              .includes("tesla")
+          );
+
+      if (!tesla?.id) {
+        return res
+          .status(404)
+          .json({
+            ok: false,
+            error:
+              "Tesla Media Player is not currently available in Spotify."
+          });
+      }
+
+      // Spotify's own test track URI.
+      // We will replace this with search/selection in the finished UI.
+      const trackUri =
+        "spotify:track:4cOdK2wGLETKBW3PvgPWqT";
+
+      await spotifyRequest(
+        `/me/player/play?device_id=${encodeURIComponent(tesla.id)}`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              uris: [trackUri]
+            })
+        }
+      );
+
+      return res.json({
+        ok: true,
+        message:
+          "Playback command sent to Tesla Media Player."
+      });
+
+    } catch (error) {
+      console.error(
+        "Spotify Tesla playback test:",
+        error.message
+      );
+
+      return res
+        .status(
+          error.statusCode || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message
+        });
+    }
+  }
+);
 /*
  * -------------------------------------------------------
  * STATUS
