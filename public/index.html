@@ -1,98 +1,395 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Edwin's Tesla Passenger Control</title>
-<style>
-  :root { --bg:#111; --card:#1d1d1f; --text:#fff; --muted:#b8b8bd; --accent:#2f8cff; }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { margin:0; min-height:100vh; background:linear-gradient(#171717,#0c0c0c); color:var(--text);
-         font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif; }
-  main { max-width:900px; margin:auto; padding:34px 24px 44px; }
-  h1 { font-size:34px; margin:0 0 6px; text-align:center; }
-  .sub { text-align:center; color:var(--muted); margin-bottom:28px; }
-  section { background:var(--card); border-radius:24px; padding:22px; margin:16px 0;
-            box-shadow:0 10px 30px #0005; }
-  h2 { font-size:21px; margin:0 0 16px; }
-  .row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-  button { border:0; border-radius:18px; padding:20px 12px; min-height:74px; color:white;
-           background:#303033; font-size:20px; font-weight:600; touch-action:manipulation; }
-  button:active { transform:scale(.97); background:#454548; }
-  .temp { display:flex; align-items:center; justify-content:center; gap:18px; }
-  .temp button { width:92px; font-size:34px; }
-  #temp { font-size:44px; font-weight:700; min-width:125px; text-align:center; }
-  .message { text-align:center; min-height:26px; color:#9fd0ff; margin-top:16px; }
-  .footer { text-align:center; color:#777; font-size:13px; margin-top:24px; }
-</style>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Edwin's Tesla — Passenger Controls</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      background: #101010;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(900px, 92%);
+      margin: auto;
+      padding: 55px 0 70px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 45px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(38px, 6vw, 58px);
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: #aaa;
+      font-size: 25px;
+    }
+
+    .card {
+      background: #1c1c1e;
+      border-radius: 35px;
+      padding: 35px;
+      margin-bottom: 30px;
+    }
+
+    .card h2 {
+      margin: 0 0 30px;
+      font-size: 32px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 28px;
+      min-height: 150px;
+      background: #303033;
+      color: white;
+      font-size: 27px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:active {
+      transform: scale(0.97);
+      background: #3c3c3f;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+    }
+
+    .icon {
+      display: block;
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .temperature {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .temp-button {
+      min-height: 140px;
+      font-size: 55px;
+    }
+
+    #temperature {
+      text-align: center;
+      font-size: clamp(65px, 11vw, 100px);
+      font-weight: 700;
+    }
+
+    #status {
+      min-height: 35px;
+      margin-top: 25px;
+      text-align: center;
+      font-size: 20px;
+      color: #aaa;
+    }
+
+    #status.success {
+      color: #8ee28e;
+    }
+
+    #status.error {
+      color: #ff8b8b;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding-top: 35px;
+      }
+
+      .card {
+        padding: 25px;
+      }
+
+      button {
+        min-height: 125px;
+        font-size: 21px;
+      }
+
+      .icon {
+        font-size: 32px;
+      }
+
+      .temp-button {
+        min-height: 120px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<main>
-  <h1>🚘 Edwin's Tesla</h1>
-  <div class="sub">Passenger Controls</div>
 
-  <section>
-    <h2>🎵 Music</h2>
-    <div class="row">
-      <button onclick="send('previous')">⏮<br>Previous</button>
-      <button onclick="send('play-pause')">▶️ / ⏸<br>Play</button>
-      <button onclick="send('next')">⏭<br>Next</button>
+  <main class="container">
+
+    <header>
+      <h1>🚘 Edwin's Tesla</h1>
+      <div class="subtitle">Passenger Controls</div>
+    </header>
+
+
+    <section class="card">
+
+      <h2>🎵 Music</h2>
+
+      <div class="controls">
+
+        <button onclick="sendAction('previous')">
+          <span class="icon">⏮️</span>
+          Previous
+        </button>
+
+        <button onclick="sendAction('playPause')">
+          <span class="icon">⏯️</span>
+          Play / Pause
+        </button>
+
+        <button onclick="sendAction('next')">
+          <span class="icon">⏭️</span>
+          Next
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <section class="card">
+
+      <h2>🔊 Volume</h2>
+
+      <div class="controls">
+
+        <button onclick="sendAction('volumeDown')">
+          <span class="icon">🔉</span>
+          Volume −
+        </button>
+
+        <button onclick="sendAction('playPause')">
+          <span class="icon">⏯️</span>
+          Play / Pause
+        </button>
+
+        <button onclick="sendAction('volumeUp')">
+          <span class="icon">🔊</span>
+          Volume +
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <section class="card">
+
+      <h2>🌡️ Cabin Temperature</h2>
+
+      <div class="temperature">
+
+        <button
+          class="temp-button"
+          onclick="changeTemperature(-1)"
+        >
+          −
+        </button>
+
+        <div id="temperature">
+          70°F
+        </div>
+
+        <button
+          class="temp-button"
+          onclick="changeTemperature(1)"
+        >
+          +
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <div id="status">
+      Ready
     </div>
-  </section>
 
-  <section>
-    <h2>🔊 Volume</h2>
-    <div class="row">
-      <button onclick="send('volume-down')">−</button>
-      <button onclick="send('play-pause')">▶️ / ⏸</button>
-      <button onclick="send('volume-up')">+</button>
-    </div>
-  </section>
+  </main>
 
-  <section>
-    <h2>🌡️ Cabin Temperature</h2>
-    <div class="temp">
-      <button onclick="changeTemp(-1)">−</button>
-      <div id="temp">72°F</div>
-      <button onclick="changeTemp(1)">+</button>
-    </div>
-    <div class="message" id="message"></div>
-  </section>
 
-  <div class="footer">Passenger controls are limited for your safety and privacy.</div>
-</main>
+  <script>
 
-<script>
-let temperature = 72;
-const MIN = 68, MAX = 76;
+    const MIN_TEMP = 65;
+    const MAX_TEMP = 72;
 
-async function send(action, extra={}) {
-  const message = document.getElementById("message");
-  message.textContent = "Sending…";
-  try {
-    const r = await fetch("/api/control", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({action, ...extra})
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || "Command failed");
-    message.textContent = "Done ✓";
-    setTimeout(()=>message.textContent="",1200);
-  } catch (e) {
-    message.textContent = e.message;
-  }
-}
+    let temperature = 70;
+    let commandInProgress = false;
 
-function changeTemp(delta) {
-  const next = Math.max(MIN, Math.min(MAX, temperature + delta));
-  if (next === temperature) return;
-  temperature = next;
-  document.getElementById("temp").textContent = `${temperature}°F`;
-  send("set-temp", {temperature});
-}
-</script>
+
+    function setStatus(message, type = "") {
+
+      const status =
+        document.getElementById("status");
+
+      status.textContent = message;
+      status.className = type;
+
+    }
+
+
+    function setButtonsDisabled(disabled) {
+
+      document
+        .querySelectorAll("button")
+        .forEach(button => {
+          button.disabled = disabled;
+        });
+
+    }
+
+
+    async function sendRequest(payload) {
+
+      if (commandInProgress) {
+        return;
+      }
+
+      commandInProgress = true;
+      setButtonsDisabled(true);
+
+      setStatus("Sending command…");
+
+      try {
+
+        const response = await fetch(
+          "/api/control",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify(payload)
+          }
+        );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok || !data.ok) {
+
+          throw new Error(
+            data.error ||
+            "Command failed."
+          );
+
+        }
+
+
+        setStatus(
+          "Command sent ✓",
+          "success"
+        );
+
+
+      } catch (error) {
+
+        console.error(error);
+
+        setStatus(
+          error.message ||
+          "Unable to send command.",
+          "error"
+        );
+
+      } finally {
+
+        commandInProgress = false;
+        setButtonsDisabled(false);
+
+      }
+
+    }
+
+
+    function sendAction(action) {
+
+      sendRequest({
+        action
+      });
+
+    }
+
+
+    function changeTemperature(change) {
+
+      const newTemperature =
+        temperature + change;
+
+
+      if (
+        newTemperature < MIN_TEMP ||
+        newTemperature > MAX_TEMP
+      ) {
+
+        return;
+
+      }
+
+
+      temperature =
+        newTemperature;
+
+
+      document.getElementById(
+        "temperature"
+      ).textContent =
+        `${temperature}°F`;
+
+
+      sendRequest({
+        action: "temperature",
+        temperatureF: temperature
+      });
+
+    }
+
+  </script>
+
 </body>
 </html>
