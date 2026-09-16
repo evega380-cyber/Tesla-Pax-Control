@@ -626,7 +626,7 @@ app.get("/passenger/setup", (req, res) => {
 
   res.redirect("/");
 });
-function requirePassenger(req, res, next) {
+const requirePassenger = (req, res, next) => {
   const cookies = Object.fromEntries(
     (req.headers.cookie || "")
       .split(";")
