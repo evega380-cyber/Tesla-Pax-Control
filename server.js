@@ -622,18 +622,47 @@ function requirePassenger(req, res, next) {
  * PASSENGER COMMAND ENDPOINT
  * -------------------------------------------------------
  */
+app.get("/passenger/setup", (req, res) => {
+  const token = req.query.token;
 
-app.post("/api/control", requirePassenger, async (req, res) => {
-    try {
-      const { action, temperatureF } = req.body || {};
+  if (!process.env.PASSENGER_TOKEN || token !== process.env.PASSENGER_TOKEN) {
+    return res.status(401).send("Invalid passenger authorization.");
+  }
 
-      const commands = {
-        previous: "media_prev_track",
-        playPause: "media_toggle_playback",
-        next: "media_next_track",
-        volumeDown: "media_volume_down",
-        volumeUp: "media_volume_up"
-      };
+  res.cookie("pax_passenger", process.env.PASSENGER_TOKEN, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 1000 * 60 * 60 * 24 * 365
+  });
+
+  res.redirect("/");
+});
+function requirePassenger(req, res, next) {
+  const cookies = Object.fromEntries(
+    (req.headers.cookie || "")
+      .split(";")
+      .filter(Boolean)
+      .map(cookie => {
+        const index = cookie.indexOf("=");
+        return [
+          cookie.slice(0, index).trim(),
+          decodeURIComponent(cookie.slice(index + 1))
+        ];
+      })
+  );
+
+  const token = cookies.pax_passenger;
+
+  if (!process.env.PASSENGER_TOKEN || token !== process.env.PASSENGER_TOKEN) {
+    return res.status(401).json({
+      ok: false,
+      error: "Passenger authorization required."
+    });
+  }
+
+  next();
+}
 
       /*
        * MEDIA CONTROLS
