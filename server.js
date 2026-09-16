@@ -1716,17 +1716,29 @@ async function sendTeslaCommand(
     }
   );
 }
+
 /*
  * -------------------------------------------------------
- * TEMPORARY TESLA NAVIGATION TEST
+ * PASSENGER TRIP / NAVIGATION
  * -------------------------------------------------------
  */
 
 app.get(
-  "/api/test-navigation",
+  "/api/trip",
   requirePassenger,
   async (req, res) => {
     try {
+      /*
+       * Only expose live trip information
+       * while a passenger ride is active.
+       */
+      if (!currentRide.active) {
+        return res.json({
+          active: false,
+          navigationActive: false
+        });
+      }
+
       const accessToken =
         await getTeslaAccessToken();
 
@@ -1747,20 +1759,133 @@ app.get(
       if (!response.ok) {
         return res
           .status(response.status)
-          .json(data);
+          .json({
+            ok: false,
+            error:
+              data?.error ||
+              "Unable to retrieve trip information."
+          });
       }
 
+      const drive =
+        data?.response?.drive_state ||
+        data?.response?.location_data ||
+        {};
+
+      const destination =
+        String(
+          drive.active_route_destination ||
+          ""
+        ).trim();
+
+      /*
+       * No active Tesla navigation route.
+       */
+      if (!destination) {
+        return res.json({
+          active: true,
+          navigationActive: false
+        });
+      }
+
+      /*
+       * Return only the information needed
+       * by the passenger Trip screen.
+       *
+       * Battery information and other raw
+       * vehicle/location fields are intentionally
+       * excluded.
+       */
       return res.json({
-        ok: true,
-        navigation:
-          data?.response?.drive_state ||
-          data?.response?.location_data ||
-          data?.response
+        active: true,
+        navigationActive: true,
+
+        destination,
+
+        minutesRemaining:
+          Number.isFinite(
+            Number(
+              drive.active_route_minutes_to_arrival
+            )
+          )
+            ? Number(
+                drive.active_route_minutes_to_arrival
+              )
+            : null,
+
+        milesRemaining:
+          Number.isFinite(
+            Number(
+              drive.active_route_miles_to_arrival
+            )
+          )
+            ? Number(
+                drive.active_route_miles_to_arrival
+              )
+            : null,
+
+        trafficDelayMinutes:
+          Number.isFinite(
+            Number(
+              drive.active_route_traffic_minutes_delay
+            )
+          )
+            ? Number(
+                drive.active_route_traffic_minutes_delay
+              )
+            : null,
+
+        vehicle: {
+          latitude:
+            Number.isFinite(
+              Number(drive.latitude)
+            )
+              ? Number(drive.latitude)
+              : null,
+
+          longitude:
+            Number.isFinite(
+              Number(drive.longitude)
+            )
+              ? Number(drive.longitude)
+              : null,
+
+          heading:
+            Number.isFinite(
+              Number(drive.heading)
+            )
+              ? Number(drive.heading)
+              : null
+        },
+
+        destinationLocation: {
+          latitude:
+            Number.isFinite(
+              Number(
+                drive.active_route_latitude
+              )
+            )
+              ? Number(
+                  drive.active_route_latitude
+                )
+              : null,
+
+          longitude:
+            Number.isFinite(
+              Number(
+                drive.active_route_longitude
+              )
+            )
+              ? Number(
+                  drive.active_route_longitude
+                )
+              : null
+        }
       });
 
     } catch (error) {
       console.error(
-        "Navigation test error:",
+        "Passenger trip error:",
         error.message
       );
 
@@ -1768,65 +1893,9 @@ app.get(
         .status(500)
         .json({
           ok: false,
-          error: error.message
+          error:
+            "Unable to retrieve trip information."
         });
-    }
-  }
-);
-app.get(
-  "/api/test-telemetry-status",
-  requirePassenger,
-  async (req, res) => {
-    try {
-      const accessToken = await getTeslaAccessToken();
-
-      const response = await fetch(
-        `${TESLA_AUDIENCE}/api/1/vehicles/fleet_status`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            vins: [VIN]
-          })
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return res.status(response.status).json({
-          ok: false,
-          error: data?.error || "Tesla request failed"
-        });
-      }
-
-      const vehicleInfo =
-        data?.response?.vehicle_info || {};
-
-      // Get the vehicle record without returning
-      // the VIN/key itself.
-      const vehicle =
-        Object.values(vehicleInfo)[0];
-
-     return res.json({
-  ok: true,
-  fleetTelemetryVersion:
-    vehicle?.fleet_telemetry_version ?? null
-});
-
-    } catch (error) {
-      console.error(
-        "Telemetry status test error:",
-        error.message
-      );
-
-      return res.status(500).json({
-        ok: false,
-        error: error.message
-      });
     }
   }
 );
