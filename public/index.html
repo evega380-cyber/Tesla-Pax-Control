@@ -175,7 +175,25 @@ button{cursor:pointer}
   font-size:23px;
   font-weight:800;
 }
+.welcomeBrand{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
 
+.brandWelcome{
+  font-family:"Allura",cursive;
+  color:#1ed760;
+  font-size:42px;
+  font-weight:400;
+  line-height:1;
+}
+
+.brandPassenger{
+  color:#fff;
+  font-size:22px;
+  font-weight:750;
+}
 .logo{
   width:44px;
   height:44px;
@@ -677,9 +695,9 @@ button:active{
 
     <div class="welcomeLogo">♪</div>
 
-    <div id="welcomeEyebrow" class="welcomeEyebrow">
-      PAX CONTROL
-    </div>
+   <div id="welcomeEyebrow" class="welcomeEyebrow">
+  YOUR RIDE IS READY
+</div>
 
     <h1 id="welcomeTitle" class="welcomeTitle waitingTitle">
       Ready for your next ride
@@ -731,10 +749,10 @@ button:active{
 
 <header class="topbar">
 
-  <div class="brand">
-    <div class="logo">♪</div>
-    Pax Control
-  </div>
+ <div class="brand welcomeBrand">
+  <span class="brandWelcome">Welcome,</span>
+  <span id="mainPassengerName" class="brandPassenger">Guest</span>
+</div>
 
   <div class="status">
     <span class="dot"></span>
@@ -1292,8 +1310,8 @@ function showWaitingScreen(){
 
   welcomeScreen.classList.remove("hidden");
 
-  welcomeEyebrow.textContent=
-    "PAX CONTROL";
+welcomeEyebrow.textContent=
+  "YOUR RIDE IS READY";
 
   welcomeTitle.textContent=
     "Ready for your next ride";
@@ -1322,7 +1340,9 @@ function showPassengerWelcome(
   }
 
   welcomedRideId=rideId;
-
+document
+  .getElementById("mainPassengerName")
+  .textContent=passengerName;
   welcomeScreen.classList.remove(
     "hidden"
   );
