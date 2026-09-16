@@ -1253,10 +1253,32 @@ function showPassengerWelcome(
     passengerName
   );
 
+  /*
+   * Keep the welcome screen visible
+   * for 8 seconds, then reveal the
+   * passenger dashboard.
+   */
+
   welcomeTimeout=setTimeout(()=>{
+
+    welcomeScreen.classList.add(
+      "hidden"
+    );
+
+    welcomeTimeout=null;
+
+    /*
+     * Leaflet needs to recalculate its
+     * size after the welcome overlay
+     * disappears.
+     */
+
+    setTimeout(()=>{
+
       if(tripMap){
         tripMap.invalidateSize();
       }
+
     },200);
 
   },8000);
