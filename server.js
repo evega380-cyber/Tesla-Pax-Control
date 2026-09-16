@@ -463,7 +463,7 @@ app.get(
  * -------------------------------------------------------
  */
 
-const TESLA_PROXY_URL = "https://127.0.0.1:4443";
+const TESLA_PROXY_URL = "https://localhost:4443";
 const TESLA_PROXY_CERT = "/data/tesla-proxy/tls-cert.pem";
 
 async function sendTeslaCommand(command, body = {}) {
