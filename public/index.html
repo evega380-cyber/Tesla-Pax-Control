@@ -1076,6 +1076,117 @@ function showMessage(text,type=""){
    WELCOME / RIDE
 -------------------------------------------------- */
 
+function speakPassengerWelcome(passengerName){
+
+  /*
+   * Use the iPad's built-in speech engine.
+   * When the iPad is connected to the Tesla
+   * through Bluetooth audio, the announcement
+   * can play through the cabin speakers.
+   */
+
+  if(
+    !("speechSynthesis" in window)
+  ){
+    return;
+  }
+
+  try{
+
+    window.speechSynthesis.cancel();
+
+    const safeName=
+      String(
+        passengerName||""
+      ).trim();
+
+    const greeting=
+      safeName
+        ?`Welcome aboard, ${safeName}!`
+        :"Welcome aboard!";
+
+    const text=
+      `${greeting} `+
+      `We're glad to have you with us today. `+
+      `The screen in front of you is yours to enjoy. `+
+      `Feel free to choose your music, adjust the cabin temperature, `+
+      `and follow along with your trip. `+
+      `Sit back, relax, and enjoy the ride!`;
+
+    const speech=
+      new SpeechSynthesisUtterance(
+        text
+      );
+
+    speech.lang="en-US";
+
+    /*
+     * Slightly slower than normal speech
+     * gives the greeting a polished,
+     * announcement-style sound.
+     */
+
+    speech.rate=0.92;
+    speech.pitch=1;
+    speech.volume=1;
+
+    /*
+     * Prefer a high-quality English voice
+     * when iPadOS makes one available.
+     */
+
+    const voices=
+      window.speechSynthesis
+        .getVoices();
+
+    const preferredVoice=
+      voices.find(
+        voice=>
+          voice.lang==="en-US" &&
+          (
+            voice.name.includes("Siri") ||
+            voice.name.includes("Samantha")
+          )
+      ) ||
+      voices.find(
+        voice=>
+          voice.lang==="en-US"
+      );
+
+    if(preferredVoice){
+      speech.voice=
+        preferredVoice;
+    }
+
+    /*
+     * Give the visual welcome a moment
+     * to appear before speaking.
+     */
+
+    setTimeout(()=>{
+
+      try{
+        window.speechSynthesis
+          .speak(speech);
+      }catch(error){
+
+        console.log(
+          "Welcome speech unavailable:",
+          error.message
+        );
+      }
+
+    },700);
+
+  }catch(error){
+
+    console.log(
+      "Welcome speech unavailable:",
+      error.message
+    );
+  }
+}
+
 function showWaitingScreen(){
 
   if(welcomeTimeout){
@@ -1133,15 +1244,16 @@ function showPassengerWelcome(
   welcomeFeatures.style.display=
     "flex";
 
+  /*
+   * Announce this passenger's welcome
+   * once when the new ride begins.
+   */
+
+  speakPassengerWelcome(
+    passengerName
+  );
+
   welcomeTimeout=setTimeout(()=>{
-
-    welcomeScreen.classList.add(
-      "hidden"
-    );
-
-    welcomeTimeout=null;
-
-    setTimeout(()=>{
       if(tripMap){
         tripMap.invalidateSize();
       }
