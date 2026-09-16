@@ -1309,6 +1309,111 @@ app.get(
 );
 /*
  * -------------------------------------------------------
+ * PLAY SELECTED SPOTIFY TRACK IN TESLA
+ * -------------------------------------------------------
+ */
+
+app.post(
+  "/api/spotify/play",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const uri =
+        String(
+          req.body?.uri || ""
+        ).trim();
+
+      /*
+       * Only allow Spotify track URIs.
+       * The passenger cannot send arbitrary
+       * Spotify API commands.
+       */
+      if (
+        !/^spotify:track:[A-Za-z0-9]+$/.test(uri)
+      ) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Invalid Spotify track."
+          });
+      }
+
+      /*
+       * Find the Tesla Media Player privately.
+       * Its Spotify device ID is never sent
+       * to the passenger interface.
+       */
+      const deviceData =
+        await spotifyRequest(
+          "/me/player/devices"
+        );
+
+      const tesla =
+        (deviceData?.devices || [])
+          .find(device =>
+            device.type
+              ?.toLowerCase() ===
+              "automobile" ||
+            device.name
+              ?.toLowerCase()
+              .includes("tesla")
+          );
+
+      if (!tesla?.id) {
+        return res
+          .status(404)
+          .json({
+            ok: false,
+            error:
+              "Tesla Media Player is not currently available."
+          });
+      }
+
+      await spotifyRequest(
+        `/me/player/play?device_id=${encodeURIComponent(tesla.id)}`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              uris: [uri]
+            })
+        }
+      );
+
+      return res.json({
+        ok: true
+      });
+
+    } catch (error) {
+      console.error(
+        "Spotify Tesla playback error:",
+        error.message
+      );
+
+      return res
+        .status(
+          error.statusCode || 500
+        )
+        .json({
+          ok: false,
+
+          error:
+            error.message ||
+            "Unable to play this track."
+        });
+    }
+  }
+);
+/*
+ * -------------------------------------------------------
  * STATUS
  * -------------------------------------------------------
  */
