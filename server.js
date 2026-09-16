@@ -1799,31 +1799,32 @@ app.get(
       if (!response.ok) {
         return res.status(response.status).json({
           ok: false,
-          error: data?.error || "Tesla request failed",
-          errorDescription: data?.error_description || null
+          error: data?.error || "Tesla request failed"
         });
       }
 
-      // Show only the structure and safe capability fields.
-      // Do NOT return VIN, location, destination, battery, etc.
+      const vehicleInfo = data?.response?.vehicle_info;
+
       return res.json({
         ok: true,
-        responseType: Array.isArray(data?.response)
-          ? "array"
-          : typeof data?.response,
 
-        responseKeys:
-          data?.response &&
-          !Array.isArray(data.response) &&
-          typeof data.response === "object"
-            ? Object.keys(data.response)
+        vehicleInfoType:
+          Array.isArray(vehicleInfo)
+            ? "array"
+            : typeof vehicleInfo,
+
+        vehicleInfoKeys:
+          vehicleInfo &&
+          !Array.isArray(vehicleInfo) &&
+          typeof vehicleInfo === "object"
+            ? Object.keys(vehicleInfo)
             : [],
 
-        firstItemKeys:
-          Array.isArray(data?.response) &&
-          data.response[0] &&
-          typeof data.response[0] === "object"
-            ? Object.keys(data.response[0])
+        firstVehicleKeys:
+          Array.isArray(vehicleInfo) &&
+          vehicleInfo[0] &&
+          typeof vehicleInfo[0] === "object"
+            ? Object.keys(vehicleInfo[0])
             : []
       });
 
