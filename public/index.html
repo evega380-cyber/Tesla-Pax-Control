@@ -2,22 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080a0d">
-
 <title>Pax Control</title>
 
-<!-- Leaflet map -->
 <link
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 />
 
 <style>
-
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent
@@ -29,26 +23,12 @@ html,body{
   min-height:100%;
   background:#080a0d;
   color:#fff;
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    "Helvetica Neue",
-    Arial,
-    sans-serif
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif
 }
 
-body{
-  min-height:100vh
-}
-
-button,input{
-  font:inherit
-}
-
-button{
-  cursor:pointer
-}
+body{min-height:100vh}
+button,input{font:inherit}
+button{cursor:pointer}
 
 /* --------------------------------------------------
    WELCOME / WAITING
@@ -58,25 +38,14 @@ button{
   position:fixed;
   inset:0;
   z-index:1000;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
   text-align:center;
   padding:40px;
-
   background:
-    radial-gradient(
-      circle at 50% 30%,
-      #243129 0%,
-      #101713 35%,
-      #07090b 75%
-    );
-
-  transition:
-    opacity .8s ease,
-    visibility .8s ease;
+    radial-gradient(circle at 50% 30%,#243129 0%,#101713 35%,#07090b 75%);
+  transition:opacity .8s ease,visibility .8s ease;
 }
 
 #welcomeScreen.hidden{
@@ -91,105 +60,66 @@ button{
 }
 
 @keyframes welcomeIn{
-  from{
-    opacity:0;
-    transform:
-      translateY(20px)
-      scale(.98)
-  }
-
-  to{
-    opacity:1;
-    transform:
-      translateY(0)
-      scale(1)
-  }
+  from{opacity:0;transform:translateY(20px) scale(.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
 }
 
 .welcomeLogo{
   width:90px;
   height:90px;
-
   border-radius:50%;
-
   display:grid;
   place-items:center;
-
   margin:0 auto 30px;
-
   background:#1ed760;
   color:#06130a;
-
   font-size:43px;
-
-  box-shadow:
-    0 0 55px
-    rgba(30,215,96,.22);
+  box-shadow:0 0 55px rgba(30,215,96,.22);
 }
 
 .welcomeEyebrow{
   color:#1ed760;
-
   font-weight:800;
   letter-spacing:2px;
   text-transform:uppercase;
   font-size:14px;
-
   margin-bottom:18px;
 }
 
 .welcomeTitle{
   margin:0;
-
-  font-size:
-    clamp(55px,8vw,100px);
-
+  font-size:clamp(55px,8vw,100px);
   line-height:1;
   letter-spacing:-4px;
 }
 
 .welcomeMessage{
   margin:25px auto 0;
-
   max-width:700px;
-
   color:#b5bdc4;
-
-  font-size:
-    clamp(20px,2.5vw,28px);
-
+  font-size:clamp(20px,2.5vw,28px);
   line-height:1.45;
 }
 
 .welcomeFeatures{
   display:flex;
   justify-content:center;
-
   gap:18px;
   flex-wrap:wrap;
-
   margin-top:35px;
 }
 
 .welcomeFeature{
   padding:14px 20px;
-
   border-radius:18px;
-
-  background:
-    rgba(255,255,255,.07);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
-
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.08);
   color:#d7dce0;
   font-size:16px;
 }
 
 .waitingTitle{
-  font-size:
-    clamp(45px,7vw,80px);
+  font-size:clamp(45px,7vw,80px);
 }
 
 /* --------------------------------------------------
@@ -198,38 +128,27 @@ button{
 
 .app{
   min-height:100vh;
-  max-width:1400px;
-
+  max-width:1500px;
   margin:auto;
-
   padding:
-    max(24px,env(safe-area-inset-top))
-    32px
-    max(24px,env(safe-area-inset-bottom));
-
+    max(20px,env(safe-area-inset-top))
+    28px
+    max(20px,env(safe-area-inset-bottom));
   background:
-    radial-gradient(
-      circle at 15% 0%,
-      #20262d 0%,
-      #0c0f13 38%,
-      #07090b 78%
-    );
+    radial-gradient(circle at 15% 0%,#20262d 0%,#0c0f13 38%,#07090b 78%);
 }
 
 .topbar{
   display:flex;
   justify-content:space-between;
   align-items:center;
-
   margin-bottom:20px;
 }
 
 .brand{
   display:flex;
   align-items:center;
-
   gap:13px;
-
   font-size:23px;
   font-weight:800;
 }
@@ -237,176 +156,96 @@ button{
 .logo{
   width:44px;
   height:44px;
-
   border-radius:50%;
-
   background:#1ed760;
   color:#06130a;
-
   display:grid;
   place-items:center;
-
   font-size:24px;
 }
 
 .status{
   color:#aab1b8;
-
   display:flex;
   align-items:center;
-
   gap:9px;
-
   font-size:14px;
 }
 
 .dot{
   width:9px;
   height:9px;
-
   border-radius:50%;
-
   background:#1ed760;
-
-  box-shadow:
-    0 0 14px #1ed760;
+  box-shadow:0 0 14px #1ed760;
 }
 
 /* --------------------------------------------------
-   VIEW TABS
+   DASHBOARD
 -------------------------------------------------- */
 
-.viewTabs{
-  display:flex;
-  justify-content:center;
-
-  width:max-content;
-  max-width:100%;
-
-  margin:
-    0 auto 28px;
-
-  padding:6px;
-
-  gap:7px;
-
-  border-radius:18px;
-
-  background:
-    rgba(255,255,255,.06);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
-}
-
-.viewTab{
-  border:0;
-
-  border-radius:13px;
-
-  padding:
-    12px 22px;
-
-  background:transparent;
-
-  color:#9da5ad;
-
-  font-weight:750;
-}
-
-.viewTab.active{
-  background:#fff;
-  color:#080a0d;
-}
-
-.view{
-  display:none;
-}
-
-.view.active{
-  display:block;
-}
-
-/* --------------------------------------------------
-   MUSIC
--------------------------------------------------- */
-
-.main{
+.dashboard{
   display:grid;
+  grid-template-columns:minmax(390px,.9fr) minmax(470px,1.1fr);
+  gap:24px;
+  align-items:stretch;
+}
 
-  grid-template-columns:
-    minmax(300px,.82fr)
-    minmax(440px,1.18fr);
+.panel{
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:28px;
+  padding:22px;
+}
 
-  gap:50px;
+/* --------------------------------------------------
+   MUSIC PANEL
+-------------------------------------------------- */
 
+.musicTop{
+  display:grid;
+  grid-template-columns:190px 1fr;
+  gap:22px;
   align-items:center;
 }
 
 .artwork{
-  width:100%;
-  max-width:475px;
-
-  aspect-ratio:1;
-
-  border-radius:27px;
-
-  margin:auto;
-
+  width:190px;
+  height:190px;
+  border-radius:22px;
   object-fit:cover;
-
-  background:
-    linear-gradient(
-      145deg,
-      #222932,
-      #0d1014
-    );
-
-  box-shadow:
-    0 30px 70px
-    rgba(0,0,0,.55);
+  background:linear-gradient(145deg,#222932,#0d1014);
+  box-shadow:0 20px 45px rgba(0,0,0,.45);
 }
 
-.info{
+.musicInfo{
   min-width:0;
 }
 
 .eyebrow{
   color:#1ed760;
-
-  font-size:13px;
+  font-size:12px;
   font-weight:800;
-
-  letter-spacing:1.8px;
+  letter-spacing:1.7px;
   text-transform:uppercase;
-
-  margin-bottom:13px;
+  margin-bottom:10px;
 }
 
 .title{
-  font-size:
-    clamp(38px,5vw,65px);
-
+  font-size:clamp(28px,3vw,43px);
   font-weight:850;
-
-  letter-spacing:-2px;
-  line-height:1.02;
-
-  margin:
-    0 0 12px;
-
+  letter-spacing:-1.5px;
+  line-height:1.03;
+  margin:0 0 9px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
 .artist{
-  font-size:23px;
   color:#aeb5bd;
-
-  margin-bottom:27px;
-
+  font-size:19px;
+  margin-bottom:18px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -415,69 +254,50 @@ button{
 .progressRow{
   display:flex;
   align-items:center;
-
-  gap:12px;
-
+  gap:10px;
   color:#899198;
-  font-size:12px;
+  font-size:11px;
 }
 
 .progress{
   height:5px;
-
   background:#343a40;
-
   border-radius:20px;
-
   overflow:hidden;
-
   flex:1;
 }
 
 .progressFill{
   height:100%;
   width:0;
-
   background:#fff;
-
   border-radius:20px;
 }
 
 .media{
   display:flex;
-
   justify-content:center;
   align-items:center;
-
-  gap:32px;
-
-  margin:
-    25px 0;
+  gap:30px;
+  margin:22px 0 18px;
 }
 
 .media button{
   border:0;
-
   background:transparent;
-
   color:#fff;
-
-  width:64px;
-  height:64px;
-
+  width:56px;
+  height:56px;
   border-radius:50%;
-
-  font-size:31px;
+  font-size:27px;
 }
 
 .media .play{
-  width:82px;
-  height:82px;
-
+  width:70px;
+  height:70px;
   background:#fff;
   color:#000;
-
-  font-size:34px;
+  font-size:30px;
 }
 
 button:active{
@@ -486,154 +306,100 @@ button:active{
 
 .volume{
   display:flex;
-
   align-items:center;
   justify-content:space-between;
-
-  background:
-    rgba(255,255,255,.06);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
-
-  border-radius:20px;
-
-  padding:
-    16px 20px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:18px;
+  padding:13px 17px;
 }
 
 .volumeBtns{
   display:flex;
-  gap:10px;
+  gap:9px;
 }
 
-.smallBtn,
-.tempBtn{
+.smallBtn,.tempBtn{
   border:0;
-
-  background:
-    rgba(255,255,255,.1);
-
+  background:rgba(255,255,255,.1);
   color:#fff;
-
-  width:55px;
-  height:48px;
-
-  border-radius:14px;
-
-  font-size:23px;
+  width:50px;
+  height:44px;
+  border-radius:13px;
+  font-size:22px;
 }
 
 /* --------------------------------------------------
-   SPOTIFY SEARCH
+   SEARCH
 -------------------------------------------------- */
 
 .searchBox{
-  margin-top:25px;
-
-  background:
-    rgba(255,255,255,.055);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
-
-  border-radius:22px;
-
-  padding:18px;
+  margin-top:16px;
 }
 
 .searchBar{
   display:flex;
-  gap:10px;
+  gap:9px;
 }
 
 .searchBar input{
   flex:1;
-
+  min-width:0;
   border:0;
   outline:0;
-
-  border-radius:15px;
-
-  padding:
-    14px 17px;
-
+  border-radius:14px;
+  padding:13px 15px;
   background:#fff;
   color:#111;
-
-  font-size:16px;
+  font-size:15px;
 }
 
 .searchButton{
   border:0;
-
-  border-radius:15px;
-
-  padding:
-    0 22px;
-
+  border-radius:14px;
+  padding:0 18px;
   background:#1ed760;
   color:#07140b;
-
   font-weight:800;
 }
 
 .results{
-  max-height:245px;
-
+  max-height:175px;
   overflow-y:auto;
-
-  margin-top:12px;
+  margin-top:9px;
 }
 
 .track{
   display:grid;
-
-  grid-template-columns:
-    54px 1fr auto;
-
-  gap:12px;
-
+  grid-template-columns:46px 1fr auto;
+  gap:10px;
   align-items:center;
-
-  padding:9px;
-
-  border-radius:13px;
-
-  cursor:pointer;
+  padding:7px;
+  border-radius:12px;
 }
 
 .track:active{
-  background:
-    rgba(255,255,255,.1);
+  background:rgba(255,255,255,.1);
 }
 
 .track img{
-  width:54px;
-  height:54px;
-
-  border-radius:8px;
-
+  width:46px;
+  height:46px;
+  border-radius:7px;
   object-fit:cover;
 }
 
 .trackName{
   font-weight:700;
-
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
 .trackArtist{
-  font-size:13px;
-
   color:#999fa6;
-
-  margin-top:4px;
-
+  font-size:12px;
+  margin-top:3px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -641,271 +407,113 @@ button:active{
 
 .trackPlay{
   color:#1ed760;
-
-  font-size:22px;
-
-  padding:10px;
+  font-size:20px;
+  padding:8px;
 }
 
 /* --------------------------------------------------
-   CLIMATE
+   TRIP PANEL
 -------------------------------------------------- */
 
-.climate{
-  margin-top:25px;
-
-  background:
-    rgba(255,255,255,.06);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
-
-  border-radius:24px;
-
-  padding:
-    18px 26px;
-
-  display:grid;
-
-  grid-template-columns:
-    1fr auto 1fr;
-
-  align-items:center;
-
-  gap:20px;
-}
-
-.climateTitle{
-  font-weight:750;
-}
-
-.climateSub{
-  color:#8f979f;
-
-  font-size:13px;
-
-  margin-top:4px;
-}
-
-.tempControls{
+.tripPanel{
   display:flex;
-
-  align-items:center;
-
-  gap:19px;
-}
-
-.tempBtn{
-  border-radius:50%;
-
-  height:52px;
-  width:52px;
-}
-
-.temperature{
-  font-size:37px;
-
-  font-weight:800;
-
-  min-width:105px;
-
-  text-align:center;
-}
-
-.setTemp{
-  justify-self:end;
-
-  border:0;
-
-  border-radius:15px;
-
-  padding:
-    14px 22px;
-
-  background:#1ed760;
-  color:#06130a;
-
-  font-weight:800;
-}
-
-/* --------------------------------------------------
-   TRIP VIEW
--------------------------------------------------- */
-
-.trip{
-  max-width:1200px;
-
-  margin:auto;
+  flex-direction:column;
+  min-height:530px;
 }
 
 .tripHeader{
-  margin-bottom:22px;
-}
-
-.tripEyebrow{
-  color:#1ed760;
-
-  font-size:13px;
-  font-weight:800;
-
-  letter-spacing:1.8px;
-  text-transform:uppercase;
-
-  margin-bottom:10px;
+  margin-bottom:15px;
 }
 
 .tripDestination{
   margin:0;
-
-  font-size:
-    clamp(38px,5vw,68px);
-
-  line-height:1.05;
-
-  letter-spacing:-2px;
-
+  font-size:clamp(30px,3.5vw,48px);
+  line-height:1.04;
+  letter-spacing:-1.5px;
   overflow-wrap:anywhere;
 }
 
 .tripStats{
   display:grid;
-
-  grid-template-columns:
-    repeat(3,1fr);
-
-  gap:14px;
-
-  margin:
-    22px 0;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:15px 0;
 }
 
 .tripStat{
-  background:
-    rgba(255,255,255,.06);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
-
-  border-radius:22px;
-
-  padding:
-    20px 22px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:17px;
+  padding:13px 14px;
 }
 
 .tripStatLabel{
   color:#8f979f;
-
-  font-size:13px;
-
-  margin-bottom:7px;
+  font-size:11px;
+  margin-bottom:5px;
 }
 
 .tripStatValue{
-  font-size:
-    clamp(24px,3vw,38px);
-
+  font-size:22px;
   font-weight:800;
 }
 
 .mapShell{
   position:relative;
-
+  flex:1;
+  min-height:315px;
   overflow:hidden;
-
-  border-radius:28px;
-
-  border:
-    1px solid
-    rgba(255,255,255,.1);
-
+  border-radius:21px;
   background:#15191d;
-
-  box-shadow:
-    0 25px 65px
-    rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.08);
 }
 
 #tripMap{
+  position:absolute;
+  inset:0;
   width:100%;
-
-  height:
-    min(53vh,540px);
-
-  min-height:380px;
-
+  height:100%;
   background:#15191d;
 }
 
 .mapBadge{
   position:absolute;
-
   z-index:500;
-
-  left:18px;
-  bottom:18px;
-
-  padding:
-    11px 15px;
-
-  border-radius:15px;
-
-  background:
-    rgba(8,10,13,.87);
-
-  backdrop-filter:
-    blur(12px);
-
-  border:
-    1px solid
-    rgba(255,255,255,.12);
-
-  font-size:13px;
-
+  left:14px;
+  bottom:14px;
+  padding:9px 12px;
+  border-radius:13px;
+  background:rgba(8,10,13,.88);
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(10px);
+  font-size:12px;
   pointer-events:none;
 }
 
 .tripEmpty{
-  min-height:520px;
-
+  flex:1;
   display:flex;
   align-items:center;
   justify-content:center;
-
   text-align:center;
-
-  padding:40px;
-
-  border-radius:28px;
-
-  background:
-    rgba(255,255,255,.045);
-
-  border:
-    1px solid
-    rgba(255,255,255,.08);
+  min-height:400px;
 }
 
 .tripEmptyIcon{
-  font-size:55px;
-
-  margin-bottom:20px;
+  font-size:50px;
+  margin-bottom:16px;
 }
 
 .tripEmptyTitle{
-  font-size:32px;
-
+  font-size:29px;
   font-weight:800;
-
-  margin-bottom:10px;
+  margin-bottom:8px;
 }
 
 .tripEmptyText{
+  max-width:390px;
   color:#929aa2;
-
-  font-size:17px;
-
+  font-size:16px;
   line-height:1.5;
 }
 
@@ -913,112 +521,115 @@ button:active{
   display:none !important;
 }
 
-/* Leaflet dark-ish appearance */
-
-.leaflet-container{
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
-}
+/* --------------------------------------------------
+   MAP MARKERS
+-------------------------------------------------- */
 
 .carMarker{
   width:42px;
   height:42px;
-
   border-radius:50%;
-
   display:grid;
   place-items:center;
-
   background:#111;
-
   border:3px solid #fff;
-
-  box-shadow:
-    0 4px 18px
-    rgba(0,0,0,.45);
-
+  box-shadow:0 4px 18px rgba(0,0,0,.45);
   font-size:22px;
 }
 
 .destinationMarker{
   width:38px;
   height:38px;
-
   border-radius:50%;
-
   display:grid;
   place-items:center;
-
   background:#1ed760;
-
   border:3px solid #fff;
-
-  box-shadow:
-    0 4px 18px
-    rgba(0,0,0,.45);
-
+  box-shadow:0 4px 18px rgba(0,0,0,.45);
   font-size:20px;
 }
 
 /* --------------------------------------------------
-   MESSAGE
+   CLIMATE
 -------------------------------------------------- */
 
-.message{
-  height:22px;
+.climate{
+  margin-top:20px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+  padding:16px 24px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:20px;
+}
 
+.climateTitle{
+  font-weight:750;
+  font-size:17px;
+}
+
+.climateSub{
+  color:#8f979f;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.tempControls{
+  display:flex;
+  align-items:center;
+  gap:17px;
+}
+
+.tempBtn{
+  border-radius:50%;
+  width:49px;
+  height:49px;
+}
+
+.temperature{
+  font-size:34px;
+  font-weight:800;
+  min-width:100px;
   text-align:center;
+}
 
-  margin-top:10px;
+.setTemp{
+  justify-self:end;
+  border:0;
+  border-radius:14px;
+  padding:13px 20px;
+  background:#1ed760;
+  color:#06130a;
+  font-weight:800;
+}
 
+.message{
+  height:20px;
+  text-align:center;
+  margin-top:8px;
   color:#999;
 }
 
-.success{
-  color:#1ed760;
-}
-
-.error{
-  color:#ff7373;
-}
+.success{color:#1ed760}
+.error{color:#ff7373}
 
 /* --------------------------------------------------
    RESPONSIVE
 -------------------------------------------------- */
 
-@media(max-width:850px){
-
-  .app{
-    padding-left:18px;
-    padding-right:18px;
-  }
-
-  .main{
+@media(max-width:900px){
+  .dashboard{
     grid-template-columns:1fr;
-
-    gap:25px;
   }
 
-  .artwork{
-    max-width:400px;
-  }
-
-  .info{
-    text-align:center;
-  }
-
-  .volume,
-  .searchBox{
-    text-align:left;
+  .tripPanel{
+    min-height:500px;
   }
 
   .climate{
     grid-template-columns:1fr;
-
     text-align:center;
   }
 
@@ -1029,11 +640,6 @@ button:active{
   .setTemp{
     justify-self:center;
   }
-
-  .tripStats{
-    grid-template-columns:1fr 1fr 1fr;
-  }
-
 }
 
 </style>
@@ -1041,39 +647,22 @@ button:active{
 
 <body>
 
-<!-- ------------------------------------------------
-     WELCOME / WAITING
-------------------------------------------------- -->
+<!-- WELCOME -->
 
 <div id="welcomeScreen">
+  <div id="welcomeContent" class="welcomeContent">
 
-  <div
-    id="welcomeContent"
-    class="welcomeContent"
-  >
+    <div class="welcomeLogo">♪</div>
 
-    <div class="welcomeLogo">
-      ♪
-    </div>
-
-    <div
-      id="welcomeEyebrow"
-      class="welcomeEyebrow"
-    >
+    <div id="welcomeEyebrow" class="welcomeEyebrow">
       PAX CONTROL
     </div>
 
-    <h1
-      id="welcomeTitle"
-      class="welcomeTitle waitingTitle"
-    >
+    <h1 id="welcomeTitle" class="welcomeTitle waitingTitle">
       Ready for your next ride
     </h1>
 
-    <div
-      id="welcomeMessage"
-      class="welcomeMessage"
-    >
+    <div id="welcomeMessage" class="welcomeMessage">
       Your passenger experience is ready.
     </div>
 
@@ -1082,7 +671,6 @@ button:active{
       class="welcomeFeatures"
       style="display:none"
     >
-
       <div class="welcomeFeature">
         🎵 Choose your music
       </div>
@@ -1094,212 +682,261 @@ button:active{
       <div class="welcomeFeature">
         🗺️ Follow your trip
       </div>
-
     </div>
 
   </div>
-
 </div>
 
-<!-- ------------------------------------------------
-     APP
-------------------------------------------------- -->
+<!-- APP -->
 
 <div class="app">
 
 <header class="topbar">
 
   <div class="brand">
-
-    <div class="logo">
-      ♪
-    </div>
-
+    <div class="logo">♪</div>
     Pax Control
-
   </div>
 
   <div class="status">
-
     <span class="dot"></span>
-
     Connected to Tesla
-
   </div>
 
 </header>
 
-<!-- VIEW SWITCHER -->
+<div class="dashboard">
 
-<div class="viewTabs">
+<!-- MUSIC -->
 
-  <button
-    id="musicTab"
-    class="viewTab active"
-    onclick="showView('music')"
-  >
-    🎵 Music & Climate
-  </button>
+<section class="panel">
 
-  <button
-    id="tripTab"
-    class="viewTab"
-    onclick="showView('trip')"
-  >
-    🗺️ Trip
-  </button>
+  <div class="musicTop">
+
+    <img
+      id="artwork"
+      class="artwork"
+      alt="Album artwork"
+    >
+
+    <div class="musicInfo">
+
+      <div class="eyebrow">
+        Now Playing
+      </div>
+
+      <h1 id="songTitle" class="title">
+        Your Music
+      </h1>
+
+      <div id="artistName" class="artist">
+        Playing in your Tesla
+      </div>
+
+      <div class="progressRow">
+
+        <span id="currentTime">
+          0:00
+        </span>
+
+        <div class="progress">
+          <div
+            id="progressFill"
+            class="progressFill"
+          ></div>
+        </div>
+
+        <span id="duration">
+          --:--
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="media">
+
+    <button
+      onclick="control('previous')"
+      aria-label="Previous track"
+    >
+      ◀
+    </button>
+
+    <button
+      id="playButton"
+      class="play"
+      onclick="control('playPause')"
+      aria-label="Play or pause"
+    >
+      ▶
+    </button>
+
+    <button
+      onclick="control('next')"
+      aria-label="Next track"
+    >
+      ▶
+    </button>
+
+  </div>
+
+  <div class="volume">
+
+    <strong>
+      🔊 Cabin Volume
+    </strong>
+
+    <div class="volumeBtns">
+
+      <button
+        class="smallBtn"
+        onclick="control('volumeDown')"
+      >
+        −
+      </button>
+
+      <button
+        class="smallBtn"
+        onclick="control('volumeUp')"
+      >
+        +
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="searchBox">
+
+    <div class="searchBar">
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Search Spotify…"
+        onkeydown="if(event.key==='Enter') searchSpotify()"
+      >
+
+      <button
+        class="searchButton"
+        onclick="searchSpotify()"
+      >
+        Search
+      </button>
+
+    </div>
+
+    <div id="results" class="results"></div>
+
+  </div>
+
+</section>
+
+<!-- TRIP -->
+
+<section class="panel tripPanel">
+
+  <div id="tripActive" class="hidden">
+
+    <div class="tripHeader">
+
+      <div class="eyebrow">
+        Your Trip
+      </div>
+
+      <h1
+        id="tripDestination"
+        class="tripDestination"
+      >
+        Destination
+      </h1>
+
+    </div>
+
+    <div class="tripStats">
+
+      <div class="tripStat">
+        <div class="tripStatLabel">
+          Time Remaining
+        </div>
+        <div
+          id="tripTime"
+          class="tripStatValue"
+        >
+          --
+        </div>
+      </div>
+
+      <div class="tripStat">
+        <div class="tripStatLabel">
+          Distance
+        </div>
+        <div
+          id="tripDistance"
+          class="tripStatValue"
+        >
+          --
+        </div>
+      </div>
+
+      <div class="tripStat">
+        <div class="tripStatLabel">
+          Traffic Delay
+        </div>
+        <div
+          id="tripTraffic"
+          class="tripStatValue"
+        >
+          --
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mapShell">
+      <div id="tripMap"></div>
+
+      <div class="mapBadge">
+        🚘 Live vehicle location
+      </div>
+    </div>
+
+  </div>
+
+  <div id="tripEmpty" class="tripEmpty">
+
+    <div>
+
+      <div class="tripEmptyIcon">
+        🗺️
+      </div>
+
+      <div class="tripEmptyTitle">
+        Enjoy the ride
+      </div>
+
+      <div class="tripEmptyText">
+        Your destination, ETA and live trip
+        information will appear here when
+        navigation is active.
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
 
 </div>
 
-<!-- ------------------------------------------------
-     MUSIC VIEW
-------------------------------------------------- -->
-
-<div
-  id="musicView"
-  class="view active"
->
-
-<main class="main">
-
-  <img
-    id="artwork"
-    class="artwork"
-    alt="Album artwork"
-  >
-
-  <section class="info">
-
-    <div class="eyebrow">
-      Now Playing
-    </div>
-
-    <h1
-      id="songTitle"
-      class="title"
-    >
-      Your Music
-    </h1>
-
-    <div
-      id="artistName"
-      class="artist"
-    >
-      Playing in your Tesla
-    </div>
-
-    <div class="progressRow">
-
-      <span id="currentTime">
-        0:00
-      </span>
-
-      <div class="progress">
-
-        <div
-          id="progressFill"
-          class="progressFill"
-        ></div>
-
-      </div>
-
-      <span id="duration">
-        --:--
-      </span>
-
-    </div>
-
-    <div class="media">
-
-      <button
-        onclick="control('previous')"
-        aria-label="Previous track"
-      >
-        ◀
-      </button>
-
-      <button
-        id="playButton"
-        class="play"
-        onclick="control('playPause')"
-        aria-label="Play or pause"
-      >
-        ▶
-      </button>
-
-      <button
-        onclick="control('next')"
-        aria-label="Next track"
-      >
-        ▶
-      </button>
-
-    </div>
-
-    <div class="volume">
-
-      <strong>
-        🔊 Cabin Volume
-      </strong>
-
-      <div class="volumeBtns">
-
-        <button
-          class="smallBtn"
-          onclick="control('volumeDown')"
-        >
-          −
-        </button>
-
-        <button
-          class="smallBtn"
-          onclick="control('volumeUp')"
-        >
-          +
-        </button>
-
-      </div>
-
-    </div>
-
-    <div class="searchBox">
-
-      <div class="searchBar">
-
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Search songs or artists…"
-          onkeydown="
-            if(event.key==='Enter')
-              searchSpotify()
-          "
-        >
-
-        <button
-          class="searchButton"
-          onclick="searchSpotify()"
-        >
-          Search
-        </button>
-
-      </div>
-
-      <div
-        id="results"
-        class="results"
-      ></div>
-
-    </div>
-
-  </section>
-
-</main>
+<!-- CLIMATE -->
 
 <section class="climate">
 
   <div>
-
     <div class="climateTitle">
       Cabin Climate
     </div>
@@ -1307,7 +944,6 @@ button:active{
     <div class="climateSub">
       Passenger comfort · 65–72°F
     </div>
-
   </div>
 
   <div class="tempControls">
@@ -1344,144 +980,11 @@ button:active{
 
 </section>
 
-</div>
-
-<!-- ------------------------------------------------
-     TRIP VIEW
-------------------------------------------------- -->
-
-<div
-  id="tripView"
-  class="view"
->
-
-<section class="trip">
-
-  <!-- Active navigation -->
-
-  <div
-    id="tripActive"
-    class="hidden"
-  >
-
-    <div class="tripHeader">
-
-      <div class="tripEyebrow">
-        YOUR TRIP
-      </div>
-
-      <h1
-        id="tripDestination"
-        class="tripDestination"
-      >
-        Destination
-      </h1>
-
-    </div>
-
-    <div class="tripStats">
-
-      <div class="tripStat">
-
-        <div class="tripStatLabel">
-          Time Remaining
-        </div>
-
-        <div
-          id="tripTime"
-          class="tripStatValue"
-        >
-          --
-        </div>
-
-      </div>
-
-      <div class="tripStat">
-
-        <div class="tripStatLabel">
-          Distance
-        </div>
-
-        <div
-          id="tripDistance"
-          class="tripStatValue"
-        >
-          --
-        </div>
-
-      </div>
-
-      <div class="tripStat">
-
-        <div class="tripStatLabel">
-          Traffic Delay
-        </div>
-
-        <div
-          id="tripTraffic"
-          class="tripStatValue"
-        >
-          --
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="mapShell">
-
-      <div id="tripMap"></div>
-
-      <div class="mapBadge">
-        🚘 Live vehicle location
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- No active Tesla destination -->
-
-  <div
-    id="tripEmpty"
-    class="tripEmpty"
-  >
-
-    <div>
-
-      <div class="tripEmptyIcon">
-        🗺️
-      </div>
-
-      <div class="tripEmptyTitle">
-        Enjoy the ride
-      </div>
-
-      <div class="tripEmptyText">
-        Trip details will appear here
-        when your driver starts navigation.
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
+<div id="message" class="message"></div>
 
 </div>
 
-<div
-  id="message"
-  class="message"
-></div>
-
-</div>
-
-<!-- Leaflet -->
-
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
@@ -1502,8 +1005,6 @@ let currentRideId=null;
 let welcomedRideId=null;
 let welcomeTimeout=null;
 
-let currentView="music";
-
 let tripMap=null;
 let vehicleMarker=null;
 let destinationMarker=null;
@@ -1513,89 +1014,58 @@ const message=
   document.getElementById("message");
 
 const welcomeScreen=
-  document.getElementById(
-    "welcomeScreen"
-  );
+  document.getElementById("welcomeScreen");
 
 const welcomeTitle=
-  document.getElementById(
-    "welcomeTitle"
-  );
+  document.getElementById("welcomeTitle");
 
 const welcomeMessage=
-  document.getElementById(
-    "welcomeMessage"
-  );
+  document.getElementById("welcomeMessage");
 
 const welcomeEyebrow=
-  document.getElementById(
-    "welcomeEyebrow"
-  );
+  document.getElementById("welcomeEyebrow");
 
 const welcomeFeatures=
-  document.getElementById(
-    "welcomeFeatures"
-  );
+  document.getElementById("welcomeFeatures");
 
 /* --------------------------------------------------
    API
 -------------------------------------------------- */
 
-async function api(
-  url,
-  options={}
-){
+async function api(url,options={}){
 
   const response=
-    await fetch(
-      url,
-      {
-        credentials:"same-origin",
-        ...options
-      }
-    );
+    await fetch(url,{
+      credentials:"same-origin",
+      ...options
+    });
 
   let data={};
 
   try{
-    data=
-      await response.json();
+    data=await response.json();
   }catch{}
 
   if(!response.ok){
-
     throw new Error(
-      data.error||
-      "Request failed."
+      data.error||"Request failed."
     );
   }
 
   return data;
 }
 
-function showMessage(
-  text,
-  type=""
-){
+function showMessage(text,type=""){
 
   message.textContent=text;
-
-  message.className=
-    "message "+type;
+  message.className="message "+type;
 
   if(text){
-
     setTimeout(()=>{
 
-      if(
-        message.textContent===
-        text
-      ){
-
+      if(message.textContent===text){
         message.textContent="";
-
-        message.className=
-          "message";
+        message.className="message";
       }
 
     },3000);
@@ -1603,93 +1073,17 @@ function showMessage(
 }
 
 /* --------------------------------------------------
-   VIEW SWITCHING
--------------------------------------------------- */
-
-function showView(view){
-
-  currentView=view;
-
-  const music=
-    view==="music";
-
-  document
-    .getElementById(
-      "musicView"
-    )
-    .classList
-    .toggle(
-      "active",
-      music
-    );
-
-  document
-    .getElementById(
-      "tripView"
-    )
-    .classList
-    .toggle(
-      "active",
-      !music
-    );
-
-  document
-    .getElementById(
-      "musicTab"
-    )
-    .classList
-    .toggle(
-      "active",
-      music
-    );
-
-  document
-    .getElementById(
-      "tripTab"
-    )
-    .classList
-    .toggle(
-      "active",
-      !music
-    );
-
-  if(!music){
-
-    loadTrip();
-
-    /*
-     * Leaflet needs to recalculate
-     * its size after becoming visible.
-     */
-
-    setTimeout(()=>{
-
-      if(tripMap){
-        tripMap.invalidateSize();
-      }
-
-    },150);
-  }
-}
-
-/* --------------------------------------------------
-   RIDE / WELCOME
+   WELCOME / RIDE
 -------------------------------------------------- */
 
 function showWaitingScreen(){
 
   if(welcomeTimeout){
-
-    clearTimeout(
-      welcomeTimeout
-    );
-
+    clearTimeout(welcomeTimeout);
     welcomeTimeout=null;
   }
 
-  welcomeScreen
-    .classList
-    .remove("hidden");
+  welcomeScreen.classList.remove("hidden");
 
   welcomeEyebrow.textContent=
     "PAX CONTROL";
@@ -1697,9 +1091,9 @@ function showWaitingScreen(){
   welcomeTitle.textContent=
     "Ready for your next ride";
 
-  welcomeTitle
-    .classList
-    .add("waitingTitle");
+  welcomeTitle.classList.add(
+    "waitingTitle"
+  );
 
   welcomeMessage.textContent=
     "Your passenger experience is ready.";
@@ -1714,45 +1108,46 @@ function showPassengerWelcome(
 ){
 
   if(welcomeTimeout){
-
-    clearTimeout(
-      welcomeTimeout
-    );
+    clearTimeout(welcomeTimeout);
   }
 
-  welcomedRideId=
-    rideId;
+  welcomedRideId=rideId;
 
-  welcomeScreen
-    .classList
-    .remove("hidden");
+  welcomeScreen.classList.remove(
+    "hidden"
+  );
 
   welcomeEyebrow.textContent=
     "WELCOME ABOARD";
 
-  welcomeTitle
-    .classList
-    .remove("waitingTitle");
+  welcomeTitle.classList.remove(
+    "waitingTitle"
+  );
 
   welcomeTitle.textContent=
     `Welcome, ${passengerName}! 👋`;
 
   welcomeMessage.textContent=
-    "Sit back, relax, and enjoy the ride. Choose your music, adjust the cabin temperature, or follow your trip.";
+    "Sit back, relax, and enjoy the ride. Choose your music, adjust your comfort, or follow your trip.";
 
   welcomeFeatures.style.display=
     "flex";
 
-  welcomeTimeout=
+  welcomeTimeout=setTimeout(()=>{
+
+    welcomeScreen.classList.add(
+      "hidden"
+    );
+
+    welcomeTimeout=null;
+
     setTimeout(()=>{
+      if(tripMap){
+        tripMap.invalidateSize();
+      }
+    },200);
 
-      welcomeScreen
-        .classList
-        .add("hidden");
-
-      welcomeTimeout=null;
-
-    },8000);
+  },8000);
 }
 
 async function checkRide(){
@@ -1766,7 +1161,6 @@ async function checkRide(){
 
       currentRideId=null;
       welcomedRideId=null;
-
       tripBoundsSet=false;
 
       showWaitingScreen();
@@ -1774,24 +1168,19 @@ async function checkRide(){
       return;
     }
 
-    currentRideId=
-      ride.rideId;
+    currentRideId=ride.rideId;
 
     if(
       ride.rideId &&
-      ride.rideId!==
-        welcomedRideId
+      ride.rideId!==welcomedRideId
     ){
 
       tripBoundsSet=false;
 
       showPassengerWelcome(
-        ride.passengerName||
-          "there",
+        ride.passengerName||"there",
         ride.rideId
       );
-
-      return;
     }
 
   }catch(error){
@@ -1811,29 +1200,20 @@ async function control(action){
 
   try{
 
-    await api(
-      "/api/control",
-      {
-        method:"POST",
+    await api("/api/control",{
+      method:"POST",
 
-        headers:{
-          "Content-Type":
-            "application/json"
-        },
+      headers:{
+        "Content-Type":
+          "application/json"
+      },
 
-        body:
-          JSON.stringify({
-            action
-          })
-      }
-    );
+      body:
+        JSON.stringify({action})
+    });
 
-    if(
-      action==="playPause"
-    ){
-
+    if(action==="playPause"){
       playing=!playing;
-
       updatePlayButton();
     }
 
@@ -1862,44 +1242,35 @@ function changeTemp(amount){
       MIN_TEMP,
       Math.min(
         MAX_TEMP,
-        selectedTemperature+
-          amount
+        selectedTemperature+amount
       )
     );
 
   document
-    .getElementById(
-      "temperature"
-    )
+    .getElementById("temperature")
     .textContent=
-      selectedTemperature+
-      "°F";
+      selectedTemperature+"°F";
 }
 
 async function setTemperature(){
 
   try{
 
-    await api(
-      "/api/control",
-      {
-        method:"POST",
+    await api("/api/control",{
+      method:"POST",
 
-        headers:{
-          "Content-Type":
-            "application/json"
-        },
+      headers:{
+        "Content-Type":
+          "application/json"
+      },
 
-        body:
-          JSON.stringify({
-            action:
-              "temperature",
-
-            temperatureF:
-              selectedTemperature
-          })
-      }
-    );
+      body:
+        JSON.stringify({
+          action:"temperature",
+          temperatureF:
+            selectedTemperature
+        })
+    });
 
     showMessage(
       `Cabin set to ${selectedTemperature}°F`,
@@ -1925,28 +1296,18 @@ function formatTime(ms){
     !Number.isFinite(ms) ||
     ms<0
   ){
-
     return "0:00";
   }
 
   const total=
-    Math.floor(
-      ms/1000
-    );
+    Math.floor(ms/1000);
 
   const min=
-    Math.floor(
-      total/60
-    );
+    Math.floor(total/60);
 
   const sec=
-    String(
-      total%60
-    )
-    .padStart(
-      2,
-      "0"
-    );
+    String(total%60)
+      .padStart(2,"0");
 
   return `${min}:${sec}`;
 }
@@ -1954,40 +1315,27 @@ function formatTime(ms){
 function updateProgress(){
 
   document
-    .getElementById(
-      "currentTime"
-    )
+    .getElementById("currentTime")
     .textContent=
-      formatTime(
-        progressMs
-      );
+      formatTime(progressMs);
 
   document
-    .getElementById(
-      "duration"
-    )
+    .getElementById("duration")
     .textContent=
       durationMs
-        ?formatTime(
-            durationMs
-          )
+        ?formatTime(durationMs)
         :"--:--";
 
   const pct=
     durationMs
       ?Math.min(
           100,
-          (
-            progressMs/
-            durationMs
-          )*100
+          (progressMs/durationMs)*100
         )
       :0;
 
   document
-    .getElementById(
-      "progressFill"
-    )
+    .getElementById("progressFill")
     .style.width=
       pct+"%";
 }
@@ -1995,13 +1343,9 @@ function updateProgress(){
 function updatePlayButton(){
 
   document
-    .getElementById(
-      "playButton"
-    )
+    .getElementById("playButton")
     .textContent=
-      playing
-        ?"❚❚"
-        :"▶";
+      playing?"❚❚":"▶";
 }
 
 async function loadNowPlaying(){
@@ -2016,14 +1360,11 @@ async function loadNowPlaying(){
     if(!data.item){
 
       playing=false;
-
       updatePlayButton();
-
       return;
     }
 
-    playing=
-      data.playing;
+    playing=data.playing;
 
     progressMs=
       data.progressMs||0;
@@ -2032,17 +1373,13 @@ async function loadNowPlaying(){
       data.item.durationMs||0;
 
     document
-      .getElementById(
-        "songTitle"
-      )
+      .getElementById("songTitle")
       .textContent=
         data.item.name||
         "Unknown Track";
 
     document
-      .getElementById(
-        "artistName"
-      )
+      .getElementById("artistName")
       .textContent=
         data.item.artist||
         "Unknown Artist";
@@ -2053,7 +1390,6 @@ async function loadNowPlaying(){
       );
 
     if(data.item.artwork){
-
       artwork.src=
         data.item.artwork;
     }
@@ -2086,8 +1422,7 @@ async function searchSpotify(){
       "results"
     );
 
-  const query=
-    input.value.trim();
+  const query=input.value.trim();
 
   if(!query){
     return;
@@ -2101,16 +1436,12 @@ async function searchSpotify(){
     const data=
       await api(
         "/api/spotify/search?q="+
-        encodeURIComponent(
-          query
-        )
+        encodeURIComponent(query)
       );
 
     results.innerHTML="";
 
-    if(
-      !data.tracks?.length
-    ){
+    if(!data.tracks?.length){
 
       results.innerHTML=
         "<div style='padding:15px;color:#999'>No tracks found.</div>";
@@ -2118,74 +1449,44 @@ async function searchSpotify(){
       return;
     }
 
-    for(
-      const track
-      of data.tracks
-    ){
+    for(const track of data.tracks){
 
       const row=
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
-      row.className=
-        "track";
+      row.className="track";
 
       const img=
-        document.createElement(
-          "img"
-        );
+        document.createElement("img");
 
       if(track.artwork){
-
-        img.src=
-          track.artwork;
+        img.src=track.artwork;
       }
 
       img.alt="";
 
       const info=
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
       const name=
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
-      name.className=
-        "trackName";
-
-      name.textContent=
-        track.name;
+      name.className="trackName";
+      name.textContent=track.name;
 
       const artist=
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
-      artist.className=
-        "trackArtist";
+      artist.className="trackArtist";
+      artist.textContent=track.artist;
 
-      artist.textContent=
-        track.artist;
-
-      info.append(
-        name,
-        artist
-      );
+      info.append(name,artist);
 
       const play=
-        document.createElement(
-          "div"
-        );
+        document.createElement("div");
 
-      play.className=
-        "trackPlay";
-
-      play.textContent=
-        "▶";
+      play.className="trackPlay";
+      play.textContent="▶";
 
       row.append(
         img,
@@ -2194,13 +1495,9 @@ async function searchSpotify(){
       );
 
       row.onclick=
-        ()=>playTrack(
-          track
-        );
+        ()=>playTrack(track);
 
-      results.appendChild(
-        row
-      );
+      results.appendChild(row);
     }
 
   }catch(error){
@@ -2240,29 +1537,22 @@ async function playTrack(track){
     );
 
     playing=true;
-
     updatePlayButton();
 
     document
-      .getElementById(
-        "songTitle"
-      )
+      .getElementById("songTitle")
       .textContent=
         track.name;
 
     document
-      .getElementById(
-        "artistName"
-      )
+      .getElementById("artistName")
       .textContent=
         track.artist;
 
     if(track.artwork){
 
       document
-        .getElementById(
-          "artwork"
-        )
+        .getElementById("artwork")
         .src=
           track.artwork;
     }
@@ -2294,7 +1584,7 @@ async function playTrack(track){
 }
 
 /* --------------------------------------------------
-   TRIP MAP
+   MAP
 -------------------------------------------------- */
 
 function createTripMap(){
@@ -2307,34 +1597,24 @@ function createTripMap(){
   }
 
   tripMap=
-    L.map(
-      "tripMap",
-      {
-        zoomControl:false,
-        attributionControl:true
-      }
-    );
+    L.map("tripMap",{
+      zoomControl:false,
+      attributionControl:true
+    });
 
   L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
       maxZoom:19,
-
-      attribution:
-        "&copy; OpenStreetMap"
+      attribution:"&copy; OpenStreetMap"
     }
-  )
-  .addTo(
-    tripMap
-  );
+  ).addTo(tripMap);
 
   L.control
     .zoom({
       position:"topright"
     })
-    .addTo(
-      tripMap
-    );
+    .addTo(tripMap);
 }
 
 function validCoordinate(
@@ -2343,12 +1623,8 @@ function validCoordinate(
 ){
 
   return (
-    Number.isFinite(
-      latitude
-    ) &&
-    Number.isFinite(
-      longitude
-    ) &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
     latitude>=-90 &&
     latitude<=90 &&
     longitude>=-180 &&
@@ -2359,25 +1635,19 @@ function validCoordinate(
 function updateTripMap(data){
 
   const vehicleLat=
-    Number(
-      data.vehicle?.latitude
-    );
+    Number(data.vehicle?.latitude);
 
   const vehicleLng=
-    Number(
-      data.vehicle?.longitude
-    );
+    Number(data.vehicle?.longitude);
 
   const destinationLat=
     Number(
-      data.destinationLocation
-        ?.latitude
+      data.destinationLocation?.latitude
     );
 
   const destinationLng=
     Number(
-      data.destinationLocation
-        ?.longitude
+      data.destinationLocation?.longitude
     );
 
   const hasVehicle=
@@ -2392,10 +1662,7 @@ function updateTripMap(data){
       destinationLng
     );
 
-  if(
-    !hasVehicle &&
-    !hasDestination
-  ){
+  if(!hasVehicle && !hasDestination){
     return;
   }
 
@@ -2420,25 +1687,15 @@ function updateTripMap(data){
 
       vehicleMarker=
         L.marker(
-          [
-            vehicleLat,
-            vehicleLng
-          ],
-          {
-            icon:carIcon
-          }
-        )
-        .addTo(
-          tripMap
-        );
+          [vehicleLat,vehicleLng],
+          {icon:carIcon}
+        ).addTo(tripMap);
 
     }else{
 
-      vehicleMarker
-        .setLatLng([
-          vehicleLat,
-          vehicleLng
-        ]);
+      vehicleMarker.setLatLng(
+        [vehicleLat,vehicleLng]
+      );
     }
   }
 
@@ -2461,31 +1718,19 @@ function updateTripMap(data){
             destinationLat,
             destinationLng
           ],
-          {
-            icon:
-              destinationIcon
-          }
-        )
-        .addTo(
-          tripMap
-        );
+          {icon:destinationIcon}
+        ).addTo(tripMap);
 
     }else{
 
-      destinationMarker
-        .setLatLng([
+      destinationMarker.setLatLng(
+        [
           destinationLat,
           destinationLng
-        ]);
+        ]
+      );
     }
   }
-
-  /*
-   * Frame the complete trip once.
-   * After that, the map doesn't keep
-   * jumping around while the passenger
-   * is looking at it.
-   */
 
   if(!tripBoundsSet){
 
@@ -2495,23 +1740,18 @@ function updateTripMap(data){
     ){
 
       const bounds=
-        L.latLngBounds(
+        L.latLngBounds([
+          [vehicleLat,vehicleLng],
           [
-            [
-              vehicleLat,
-              vehicleLng
-            ],
-            [
-              destinationLat,
-              destinationLng
-            ]
+            destinationLat,
+            destinationLng
           ]
-        );
+        ]);
 
       tripMap.fitBounds(
         bounds,
         {
-          padding:[60,60],
+          padding:[45,45],
           maxZoom:15
         }
       );
@@ -2519,10 +1759,7 @@ function updateTripMap(data){
     }else if(hasVehicle){
 
       tripMap.setView(
-        [
-          vehicleLat,
-          vehicleLng
-        ],
+        [vehicleLat,vehicleLng],
         14
       );
 
@@ -2554,9 +1791,7 @@ async function loadTrip(){
   try{
 
     const data=
-      await api(
-        "/api/trip"
-      );
+      await api("/api/trip");
 
     const active=
       Boolean(
@@ -2565,21 +1800,15 @@ async function loadTrip(){
       );
 
     document
-      .getElementById(
-        "tripActive"
-      )
-      .classList
-      .toggle(
+      .getElementById("tripActive")
+      .classList.toggle(
         "hidden",
         !active
       );
 
     document
-      .getElementById(
-        "tripEmpty"
-      )
-      .classList
-      .toggle(
+      .getElementById("tripEmpty")
+      .classList.toggle(
         "hidden",
         active
       );
@@ -2587,41 +1816,30 @@ async function loadTrip(){
     if(!active){
 
       tripBoundsSet=false;
-
       return;
     }
 
     document
-      .getElementById(
-        "tripDestination"
-      )
+      .getElementById("tripDestination")
       .textContent=
         data.destination||
         "Destination";
 
     const minutes=
-      Number(
-        data.minutesRemaining
-      );
+      Number(data.minutesRemaining);
 
     document
-      .getElementById(
-        "tripTime"
-      )
+      .getElementById("tripTime")
       .textContent=
         Number.isFinite(minutes)
           ?`${Math.round(minutes)} min`
           :"--";
 
     const miles=
-      Number(
-        data.milesRemaining
-      );
+      Number(data.milesRemaining);
 
     document
-      .getElementById(
-        "tripDistance"
-      )
+      .getElementById("tripDistance")
       .textContent=
         Number.isFinite(miles)
           ?`${miles.toFixed(1)} mi`
@@ -2633,32 +1851,23 @@ async function loadTrip(){
       );
 
     document
-      .getElementById(
-        "tripTraffic"
-      )
+      .getElementById("tripTraffic")
       .textContent=
         Number.isFinite(traffic)
           ?(
-              traffic>0
-                ?`+${Math.round(traffic)} min`
-                :"No delay"
-            )
+            traffic>0
+              ?`+${Math.round(traffic)} min`
+              :"No delay"
+          )
           :"--";
 
     updateTripMap(data);
 
-    if(
-      currentView==="trip" &&
-      tripMap
-    ){
+    if(tripMap){
 
-      setTimeout(
-        ()=>{
-          tripMap
-            .invalidateSize();
-        },
-        50
-      );
+      setTimeout(()=>{
+        tripMap.invalidateSize();
+      },100);
     }
 
   }catch(error){
@@ -2673,8 +1882,6 @@ async function loadTrip(){
 /* --------------------------------------------------
    TIMERS
 -------------------------------------------------- */
-
-/* Smooth music progress */
 
 setInterval(()=>{
 
@@ -2694,7 +1901,7 @@ setInterval(()=>{
 
 },1000);
 
-/* Ride state */
+/* Ride status */
 
 checkRide();
 
@@ -2713,9 +1920,8 @@ setInterval(
 );
 
 /*
- * Navigation does not need to hammer
- * Tesla every second. Refresh every
- * 15 seconds while a ride is active.
+ * Trip information refreshes every
+ * 15 seconds rather than continuously.
  */
 
 setInterval(()=>{
