@@ -195,18 +195,152 @@ function requirePassenger(
 const DRIVER_PIN =
   process.env.DRIVER_PIN;
 
-let currentRide = {
-  active: false,
-  passengerName: "",
-  rideId: null,
-  startedAt: null
-};
-
 /*
- * Driver authorization
+ * Store the current ride on Railway's
+ * persistent /data volume.
+ *
+ * This allows the driver phone and
+ * passenger iPad to always read the
+ * same ride state, even if the Node
+ * process restarts.
  */
 
-function requireDriver(req, res, next) {
+const RIDE_FILE =
+  process.env.RIDE_FILE ||
+  "/data/pax-current-ride.json";
+
+
+/*
+ * -------------------------------------------------------
+ * EMPTY RIDE
+ * -------------------------------------------------------
+ */
+
+function emptyRide() {
+  return {
+    active: false,
+    passengerName: "",
+    rideId: null,
+    startedAt: null
+  };
+}
+
+
+/*
+ * -------------------------------------------------------
+ * LOAD CURRENT RIDE
+ * -------------------------------------------------------
+ */
+
+function loadCurrentRide() {
+  try {
+    if (!fs.existsSync(RIDE_FILE)) {
+      return emptyRide();
+    }
+
+    const data =
+      JSON.parse(
+        fs.readFileSync(
+          RIDE_FILE,
+          "utf8"
+        )
+      );
+
+    return {
+      active:
+        Boolean(data?.active),
+
+      passengerName:
+        data?.active
+          ? String(
+              data?.passengerName || ""
+            )
+          : "",
+
+      rideId:
+        data?.active
+          ? String(
+              data?.rideId || ""
+            ) || null
+          : null,
+
+      startedAt:
+        data?.active
+          ? data?.startedAt || null
+          : null
+    };
+
+  } catch (error) {
+    console.error(
+      "Unable to load current ride:",
+      error.message
+    );
+
+    return emptyRide();
+  }
+}
+
+
+/*
+ * -------------------------------------------------------
+ * SAVE CURRENT RIDE
+ * -------------------------------------------------------
+ */
+
+function saveCurrentRide(ride) {
+  const directory =
+    path.dirname(RIDE_FILE);
+
+  fs.mkdirSync(
+    directory,
+    {
+      recursive: true
+    }
+  );
+
+  const temporaryFile =
+    `${RIDE_FILE}.tmp`;
+
+  fs.writeFileSync(
+    temporaryFile,
+    JSON.stringify(
+      ride,
+      null,
+      2
+    ),
+    {
+      encoding: "utf8",
+      mode: 0o600
+    }
+  );
+
+  fs.renameSync(
+    temporaryFile,
+    RIDE_FILE
+  );
+}
+
+
+/*
+ * Load any existing ride when
+ * the server starts.
+ */
+
+let currentRide =
+  loadCurrentRide();
+
+
+/*
+ * -------------------------------------------------------
+ * DRIVER AUTHORIZATION
+ * -------------------------------------------------------
+ */
+
+function requireDriver(
+  req,
+  res,
+  next
+) {
   const pin =
     String(
       req.headers["x-driver-pin"] || ""
@@ -228,17 +362,24 @@ function requireDriver(req, res, next) {
   next();
 }
 
+
 /*
- * Passenger checks current ride.
+ * -------------------------------------------------------
+ * PASSENGER CHECKS CURRENT RIDE
+ * -------------------------------------------------------
  *
- * This endpoint intentionally returns only
- * the passenger's first name and ride state.
+ * Reload the ride from the persistent
+ * file every time the iPad checks.
  */
 
 app.get(
   "/api/ride",
   requirePassenger,
   (req, res) => {
+
+    currentRide =
+      loadCurrentRide();
+
     return res.json({
       active:
         currentRide.active,
@@ -256,14 +397,21 @@ app.get(
   }
 );
 
+
 /*
- * Driver checks current ride
+ * -------------------------------------------------------
+ * DRIVER CHECKS CURRENT RIDE
+ * -------------------------------------------------------
  */
 
 app.get(
   "/api/driver/ride",
   requireDriver,
   (req, res) => {
+
+    currentRide =
+      loadCurrentRide();
+
     return res.json({
       active:
         currentRide.active,
@@ -280,14 +428,18 @@ app.get(
   }
 );
 
+
 /*
- * Start a ride
+ * -------------------------------------------------------
+ * START A RIDE
+ * -------------------------------------------------------
  */
 
 app.post(
   "/api/driver/start-ride",
   requireDriver,
   (req, res) => {
+
     let passengerName =
       String(
         req.body?.passengerName || ""
@@ -296,8 +448,10 @@ app.post(
         .replace(/\s+/g, " ")
         .slice(0, 30);
 
+
     /*
      * Keep the welcome name simple.
+     *
      * Letters, spaces, apostrophes
      * and hyphens are allowed.
      */
@@ -308,6 +462,7 @@ app.post(
         ""
       );
 
+
     if (!passengerName) {
       return res
         .status(400)
@@ -317,6 +472,11 @@ app.post(
             "Enter the passenger's first name."
         });
     }
+
+
+    /*
+     * Create a brand-new ride.
+     */
 
     currentRide = {
       active: true,
@@ -333,16 +493,30 @@ app.post(
           .toISOString()
     };
 
+
+    /*
+     * Save it to Railway's
+     * persistent volume.
+     */
+
+    saveCurrentRide(
+      currentRide
+    );
+
+
     console.log(
       "Passenger ride started."
     );
+
 
     return res.json({
       ok: true,
 
       ride: {
         active: true,
+
         passengerName,
+
         rideId:
           currentRide.rideId
       }
@@ -350,28 +524,39 @@ app.post(
   }
 );
 
+
 /*
- * End the current ride.
+ * -------------------------------------------------------
+ * END CURRENT RIDE
+ * -------------------------------------------------------
  *
- * The passenger name is immediately
- * removed rather than being kept
- * as ride history.
+ * Passenger information is immediately
+ * removed when the driver ends the ride.
  */
 
 app.post(
   "/api/driver/end-ride",
   requireDriver,
   (req, res) => {
-    currentRide = {
-      active: false,
-      passengerName: "",
-      rideId: null,
-      startedAt: null
-    };
+
+    currentRide =
+      emptyRide();
+
+
+    /*
+     * Save the cleared ride state
+     * to Railway.
+     */
+
+    saveCurrentRide(
+      currentRide
+    );
+
 
     console.log(
       "Passenger ride ended."
     );
+
 
     return res.json({
       ok: true
