@@ -665,7 +665,22 @@ button:active{
     <div id="welcomeMessage" class="welcomeMessage">
       Your passenger experience is ready.
     </div>
-
+<button
+  id="soundButton"
+  onclick="toggleWelcomeSound()"
+  style="
+    margin-top:28px;
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:18px;
+    padding:15px 24px;
+    background:rgba(255,255,255,.08);
+    color:white;
+    font-size:17px;
+    font-weight:800;
+  "
+>
+  🔇 Welcome Sound: OFF
+</button>
     <div
       id="welcomeFeatures"
       class="welcomeFeatures"
@@ -983,30 +998,11 @@ button:active{
 <div id="message" class="message"></div>
 
 </div>
-<button
-  onclick="testVoice()"
-  style="position:fixed;z-index:2000;top:20px;left:20px;padding:20px;font-size:20px;"
->
-  Test Voice
-</button>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-function testVoice(){
 
-  window.speechSynthesis.cancel();
-
-  const speech =
-    new SpeechSynthesisUtterance(
-      "Welcome aboard! Pax Control is ready for your ride."
-    );
-
-  speech.lang = "en-US";
-  speech.volume = 1;
-  speech.rate = 0.92;
-
-  window.speechSynthesis.speak(speech);
-}
 /* --------------------------------------------------
    STATE
 -------------------------------------------------- */
@@ -1094,9 +1090,67 @@ function showMessage(text,type=""){
 /* --------------------------------------------------
    WELCOME / RIDE
 -------------------------------------------------- */
+let welcomeSoundEnabled=false;
 
+function toggleWelcomeSound(){
+
+  const button=
+    document.getElementById("soundButton");
+
+  if(!welcomeSoundEnabled){
+
+    /*
+     * This physical tap unlocks Safari's
+     * speech system for the current session.
+     */
+    window.speechSynthesis.cancel();
+
+    const unlock=
+      new SpeechSynthesisUtterance(
+        "Welcome sound enabled."
+      );
+
+    unlock.lang="en-US";
+    unlock.volume=1;
+    unlock.rate=0.92;
+
+    window.speechSynthesis.speak(unlock);
+
+    welcomeSoundEnabled=true;
+
+    button.textContent=
+      "🔊 Welcome Sound: ON";
+
+    button.style.background=
+      "rgba(30,215,96,.18)";
+
+    button.style.borderColor=
+      "rgba(30,215,96,.45)";
+
+  }else{
+
+    window.speechSynthesis.cancel();
+
+    welcomeSoundEnabled=false;
+
+    button.textContent=
+      "🔇 Welcome Sound: OFF";
+
+    button.style.background=
+      "rgba(255,255,255,.08)";
+
+    button.style.borderColor=
+      "rgba(255,255,255,.15)";
+  }
+}
 function speakPassengerWelcome(passengerName){
 
+  if(!welcomeSoundEnabled){
+    return;
+  }
+
+  /*
+   * Use the iPad's built-in speech engine.
   /*
    * Use the iPad's built-in speech engine.
    * When the iPad is connected to the Tesla
@@ -1230,6 +1284,9 @@ function showWaitingScreen(){
 
   welcomeFeatures.style.display=
     "none";
+  document
+  .getElementById("soundButton")
+  .style.display="inline-block";
 }
 
 function showPassengerWelcome(
@@ -1262,7 +1319,9 @@ function showPassengerWelcome(
 
   welcomeFeatures.style.display=
     "flex";
-
+document
+  .getElementById("soundButton")
+  .style.display="none";
   /*
    * Announce this passenger's welcome
    * once when the new ride begins.
