@@ -1771,6 +1771,198 @@ app.post(
 );
 /*
  * -------------------------------------------------------
+ * SPOTIFY VIBE PLAYBACK
+ * -------------------------------------------------------
+ */
+
+app.post(
+  "/api/spotify/vibe",
+  requirePassenger,
+  async (req, res) => {
+    try {
+      const vibe =
+        String(
+          req.body?.vibe || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      /*
+       * Passenger can only choose
+       * one of these approved vibes.
+       */
+      const vibes = {
+        goodvibes:
+          "feel good happy upbeat",
+
+        chill:
+          "chill relaxing road trip",
+
+        hits:
+          "today top hits",
+
+        rnb:
+          "r&b hits",
+
+        throwbacks:
+          "2000s throwback hits",
+
+        party:
+          "party dance hits",
+
+        latino:
+          "latin hits reggaeton bachata salsa"
+      };
+
+      const searchTerm =
+        vibes[vibe];
+
+      if (!searchTerm) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            error:
+              "Invalid music vibe."
+          });
+      }
+
+      /*
+       * Find the Tesla Spotify player.
+       */
+      const deviceData =
+        await spotifyRequest(
+          "/me/player/devices"
+        );
+
+      const tesla =
+        (deviceData?.devices || [])
+          .find(device =>
+            device.type
+              ?.toLowerCase() ===
+              "automobile" ||
+            device.name
+              ?.toLowerCase()
+              .includes("tesla")
+          );
+
+      if (!tesla?.id) {
+        return res
+          .status(404)
+          .json({
+            ok: false,
+            error:
+              "Tesla Media Player is not currently available."
+          });
+      }
+
+      /*
+       * Search Spotify for tracks
+       * matching the selected vibe.
+       */
+      const results =
+        await spotifyRequest(
+          `/search?type=track&limit=10&q=${encodeURIComponent(
+            searchTerm
+          )}`
+        );
+
+      const tracks =
+        (results?.tracks?.items || [])
+          .filter(
+            track =>
+              /^spotify:track:[A-Za-z0-9]+$/.test(
+                track?.uri || ""
+              )
+          )
+          .slice(0, 10);
+
+      if (!tracks.length) {
+        return res
+          .status(404)
+          .json({
+            ok: false,
+            error:
+              "No music found for this vibe."
+          });
+      }
+
+      /*
+       * Start the first track.
+       */
+      await spotifyRequest(
+        `/me/player/play?device_id=${encodeURIComponent(
+          tesla.id
+        )}`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              uris: [
+                tracks[0].uri
+              ]
+            })
+        }
+      );
+
+      /*
+       * Queue the remaining tracks.
+       */
+      for (
+        const track
+        of tracks.slice(1)
+      ) {
+        try {
+          await spotifyRequest(
+            `/me/player/queue?uri=${encodeURIComponent(
+              track.uri
+            )}&device_id=${encodeURIComponent(
+              tesla.id
+            )}`,
+            {
+              method: "POST"
+            }
+          );
+        } catch (queueError) {
+          console.error(
+            "Spotify vibe queue error:",
+            queueError.message
+          );
+        }
+      }
+
+      return res.json({
+        ok: true,
+        vibe
+      });
+
+    } catch (error) {
+      console.error(
+        "Spotify vibe error:",
+        error.message
+      );
+
+      return res
+        .status(
+          error.statusCode || 500
+        )
+        .json({
+          ok: false,
+          error:
+            error.message ||
+            "Unable to start this vibe."
+        });
+    }
+  }
+);
+/*
+ * -------------------------------------------------------
  * STATUS
  * -------------------------------------------------------
  */
