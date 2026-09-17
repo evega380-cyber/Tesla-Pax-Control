@@ -1334,29 +1334,85 @@ async function spotifyRequest(
       }
     );
 
-  if (response.status === 204) {
+  /*
+   * Spotify uses empty responses for
+   * several playback commands.
+   */
+  if (
+    response.status === 204 ||
+    response.status === 205
+  ) {
     return null;
   }
 
-  const data =
-    await response.json();
+  /*
+   * Read the response as text first.
+   *
+   * Some Spotify responses are not JSON.
+   * Trying response.json() directly would
+   * crash with "Unexpected token".
+   */
+  const raw =
+    await response.text();
 
-  if (!response.ok) {
-    const error =
-      new Error(
-        data?.error?.message ||
-        "Spotify request failed."
-      );
+  let data = null;
 
-    error.statusCode =
-      response.status;
-
-    throw error;
+  if (raw) {
+    try {
+      data =
+        JSON.parse(raw);
+    } catch {
+      data = null;
+    }
   }
 
-  return data;
-}
+  /*
+   * Successful response.
+   */
+  if (response.ok) {
+    return data;
+  }
 
+  /*
+   * Spotify returned an error.
+   */
+  let errorMessage =
+    "Spotify request failed.";
+
+  if (
+    data?.error?.message
+  ) {
+    errorMessage =
+      data.error.message;
+
+  } else if (
+    typeof data?.error ===
+    "string"
+  ) {
+    errorMessage =
+      data.error;
+
+  } else if (raw) {
+
+    /*
+     * Don't dump Spotify's entire
+     * response onto the passenger
+     * screen. Keep the error clean.
+     */
+    errorMessage =
+      `Spotify request failed (${response.status}).`;
+  }
+
+  const error =
+    new Error(
+      errorMessage
+    );
+
+  error.statusCode =
+    response.status;
+
+  throw error;
+}
 /*
  * -------------------------------------------------------
  * SPOTIFY STATUS
