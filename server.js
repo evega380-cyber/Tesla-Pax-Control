@@ -1618,8 +1618,6 @@ app.post(
 
       /*
        * Only allow Spotify track URIs.
-       * The passenger cannot send arbitrary
-       * Spotify API commands.
        */
       if (
         !/^spotify:track:[A-Za-z0-9]+$/.test(uri)
@@ -1634,9 +1632,7 @@ app.post(
       }
 
       /*
-       * Find the Tesla Media Player privately.
-       * Its Spotify device ID is never sent
-       * to the passenger interface.
+       * Find the Tesla Media Player.
        */
       const deviceData =
         await spotifyRequest(
@@ -1664,6 +1660,9 @@ app.post(
           });
       }
 
+      /*
+       * Start the passenger's selected song.
+       */
       await spotifyRequest(
         `/me/player/play?device_id=${encodeURIComponent(tesla.id)}`,
         {
@@ -1680,6 +1679,71 @@ app.post(
             })
         }
       );
+
+      /*
+       * Search Spotify using the selected
+       * track's artist information so we
+       * can place more music behind it.
+       */
+
+      const trackId =
+        uri.split(":")[2];
+
+      const selectedTrack =
+        await spotifyRequest(
+          `/tracks/${encodeURIComponent(trackId)}`
+        );
+
+      const artistName =
+        selectedTrack
+          ?.artists?.[0]?.name || "";
+
+      /*
+       * Find additional music from the
+       * same artist. These tracks are
+       * added to the Spotify queue and
+       * will play after the requested song.
+       */
+      if (artistName) {
+        const related =
+          await spotifyRequest(
+            `/search?type=track&limit=10&q=${encodeURIComponent(
+              `artist:${artistName}`
+            )}`
+          );
+
+        const additionalTracks =
+          (related?.tracks?.items || [])
+            .filter(
+              track =>
+                track?.uri &&
+                track.uri !== uri
+            )
+            .slice(0, 5);
+
+        for (
+          const track
+          of additionalTracks
+        ) {
+          try {
+            await spotifyRequest(
+              `/me/player/queue?uri=${encodeURIComponent(
+                track.uri
+              )}&device_id=${encodeURIComponent(
+                tesla.id
+              )}`,
+              {
+                method: "POST"
+              }
+            );
+          } catch (queueError) {
+            console.error(
+              "Spotify queue item error:",
+              queueError.message
+            );
+          }
+        }
+      }
 
       return res.json({
         ok: true
@@ -1705,7 +1769,6 @@ app.post(
     }
   }
 );
-/*
  * -------------------------------------------------------
  * STATUS
  * -------------------------------------------------------
