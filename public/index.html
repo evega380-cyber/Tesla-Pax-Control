@@ -1,3 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080a0d">
+<title>Pax Control</title>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Allura&display=swap"
+>
+
+<style>
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:#080a0d;
+  color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+}
+
+body{
+  min-height:100vh;
+}
+
+button,input{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+/* --------------------------------------------------
+   WELCOME / WAITING
+-------------------------------------------------- */
+
+#welcomeScreen{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:40px;
+
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      #243129 0%,
+      #101713 35%,
+      #07090b 75%
+    );
+
+  transition:
+    opacity .8s ease,
+    visibility .8s ease;
+}
+
+#welcomeScreen.hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.welcomeContent{
+  max-width:850px;
+  animation:welcomeIn .9s ease;
+}
+
+@keyframes welcomeIn{
+  from{
+    opacity:0;
+    transform:
+      translateY(20px)
+      scale(.98);
+  }
+
+  to{
+    opacity:1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+.welcomeLogo{
+  width:90px;
+  height:90px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  margin:0 auto 30px;
+  background:#1ed760;
+  color:#06130a;
+  font-size:43px;
+  box-shadow:
+    0 0 55px
+    rgba(30,215,96,.22);
+}
+
+.welcomeEyebrow{
+  color:#1ed760;
+  font-weight:800;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  font-size:14px;
+  margin-bottom:18px;
+}
+
+.welcomeTitle{
+  margin:0;
+  font-size:
+    clamp(55px,8vw,100px);
+  line-height:1;
+  letter-spacing:-4px;
+}
+
+.welcomeScript{
+  display:block;
+  font-family:"Allura",cursive;
+  color:#1ed760;
+  font-size:
+    clamp(70px,10vw,125px);
+  font-weight:400;
+  line-height:.8;
+  letter-spacing:0;
+  text-shadow:
+    0 0 28px
+    rgba(30,215,96,.18);
+}
+
+.welcomePassengerName{
+  display:block;
+  margin-top:18px;
+  color:#fff;
+  font-size:
+    clamp(48px,6vw,78px);
+  font-weight:700;
+  line-height:1;
+  letter-spacing:-2px;
+}
+
+.welcomeMessage{
+  margin:25px auto 0;
+  max-width:700px;
+  color:#b5bdc4;
+  font-size:
+    clamp(20px,2.5vw,28px);
+  line-height:1.45;
+}
+
+.welcomeFeatures{
+  display:flex;
+  justify-content:center;
+  gap:18px;
+  flex-wrap:wrap;
+  margin-top:35px;
+}
+
+.welcomeFeature{
+  padding:14px 20px;
+  border-radius:18px;
+  background:
+    rgba(255,255,255,.07);
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+  color:#d7dce0;
+  font-size:16px;
+}
+
+.waitingTitle{
+  font-size:
+    clamp(45px,7vw,80px);
+}
+
+/* --------------------------------------------------
+   APP
+-------------------------------------------------- */
+
+.app{
+  min-height:100vh;
+  max-width:1500px;
+  margin:auto;
+
+  padding:
+    max(20px,env(safe-area-inset-top))
+    28px
+    max(20px,env(safe-area-inset-bottom));
+
+  background:
+    radial-gradient(
+      circle at 15% 0%,
+      #20262d 0%,
+      #0c0f13 38%,
+      #07090b 78%
+    );
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  font-size:23px;
+  font-weight:800;
+}
+
+.welcomeBrand{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+
+.brandWelcome{
+  font-family:"Allura",cursive;
+  color:#1ed760;
+  font-size:42px;
+  font-weight:400;
+  line-height:1;
+}
+
+.brandPassenger{
+  color:#fff;
+  font-size:22px;
+  font-weight:750;
+}
+
+.status{
+  color:#aab1b8;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-size:14px;
+}
+
+.dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#1ed760;
+  box-shadow:
+    0 0 14px #1ed760;
+}
+
+/* --------------------------------------------------
+   DASHBOARD
+-------------------------------------------------- */
+
+.dashboard{
+  display:grid;
+
+  grid-template-columns:
+    minmax(390px,.9fr)
+    minmax(470px,1.1fr);
+
+  gap:24px;
+  align-items:stretch;
+}
+
+.panel{
+  background:
+    rgba(255,255,255,.045);
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:28px;
+  padding:22px;
+}
+
+/* --------------------------------------------------
+   MUSIC
+-------------------------------------------------- */
+
+.musicTop{
+  display:grid;
+  grid-template-columns:
+    190px 1fr;
+
+  gap:22px;
+  align-items:center;
+}
+
+.artwork{
+  width:190px;
+  height:190px;
+  border-radius:22px;
+  object-fit:cover;
+
+  background:
+    linear-gradient(
+      145deg,
+      #222932,
+      #0d1014
+    );
+
+  box-shadow:
+    0 20px 45px
+    rgba(0,0,0,.45);
+}
+
+.musicInfo{
+  min-width:0;
+}
+
+.eyebrow{
+  color:#1ed760;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:1.7px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.title{
+  font-size:
+    clamp(28px,3vw,43px);
+
+  font-weight:850;
+  letter-spacing:-1.5px;
+  line-height:1.03;
+  margin:0 0 9px;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.artist{
+  color:#aeb5bd;
+  font-size:19px;
+  margin-bottom:18px;
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.progressRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#899198;
+  font-size:11px;
+}
+
+.progress{
+  height:5px;
+  background:#343a40;
+  border-radius:20px;
+  overflow:hidden;
+  flex:1;
+}
+
+.progressFill{
+  height:100%;
+  width:0;
+  background:#fff;
+  border-radius:20px;
+}
+
+.media{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:30px;
+  margin:22px 0 18px;
+}
+
+.media button{
+  border:0;
+  background:transparent;
+  color:#fff;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  font-size:27px;
+}
+
+.media .play{
+  width:70px;
+  height:70px;
+  background:#fff;
+  color:#000;
+  font-size:30px;
+}
+
+button:active{
+  transform:scale(.92);
+}
+
+.volumeBtns{
+  display:flex;
+  gap:9px;
+}
+
+.smallBtn,
+.tempBtn{
+  border:0;
+  background:
+    rgba(255,255,255,.1);
+  color:#fff;
+  width:50px;
+  height:44px;
+  border-radius:13px;
+  font-size:22px;
+}
+
+/* --------------------------------------------------
+   SEARCH
+-------------------------------------------------- */
+
+.searchBox{
+  margin-top:8px;
+}
+
+.searchBar{
+  display:flex;
+  gap:9px;
+}
+
+.searchBar input{
+  flex:1;
+  min-width:0;
+  border:0;
+  outline:0;
+  border-radius:14px;
+  padding:13px 15px;
+  background:#fff;
+  color:#111;
+  font-size:15px;
+}
+
+.searchButton{
+  border:0;
+  border-radius:14px;
+  padding:0 18px;
+  background:#1ed760;
+  color:#07140b;
+  font-weight:800;
+}
+
+.results{
+  max-height:175px;
+  overflow-y:auto;
+  margin-top:9px;
+}
+
+.track{
+  display:grid;
+  grid-template-columns:
+    46px 1fr auto;
+
+  gap:10px;
+  align-items:center;
+  padding:7px;
+  border-radius:12px;
+}
+
+.track:active{
+  background:
+    rgba(255,255,255,.1);
+}
+
+.track img{
+  width:46px;
+  height:46px;
+  border-radius:7px;
+  object-fit:cover;
+}
+
+.trackName{
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.trackArtist{
+  color:#999fa6;
+  font-size:12px;
+  margin-top:3px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.trackPlay{
+  color:#1ed760;
+  font-size:20px;
+  padding:8px;
+}
+
 /* --------------------------------------------------
    VIBES
 -------------------------------------------------- */
@@ -22,16 +538,2312 @@
 }
 
 .vibeButtons button{
-  border:1px solid rgba(255,255,255,.09);
+  border:
+    1px solid
+    rgba(255,255,255,.09);
+
   border-radius:14px;
   padding:11px 14px;
-  background:rgba(255,255,255,.07);
+
+  background:
+    rgba(255,255,255,.07);
+
   color:#fff;
   font-size:13px;
   font-weight:700;
 }
 
 .vibeButtons button:active{
-  background:rgba(30,215,96,.18);
-  border-color:rgba(30,215,96,.45);
+  background:
+    rgba(30,215,96,.18);
+
+  border-color:
+    rgba(30,215,96,.45);
 }
+
+/* --------------------------------------------------
+   TRIP
+-------------------------------------------------- */
+
+.tripPanel{
+  display:flex;
+  flex-direction:column;
+  min-height:530px;
+}
+
+.tripHeader{
+  margin-bottom:15px;
+}
+
+.tripDestination{
+  margin:0;
+  font-size:
+    clamp(30px,3.5vw,48px);
+  line-height:1.04;
+  letter-spacing:-1.5px;
+  overflow-wrap:anywhere;
+}
+
+.tripStats{
+  display:grid;
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:10px;
+  margin:15px 0;
+}
+
+.tripStat{
+  background:
+    rgba(255,255,255,.055);
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:17px;
+  padding:13px 14px;
+}
+
+.tripStatLabel{
+  color:#8f979f;
+  font-size:11px;
+  margin-bottom:5px;
+}
+
+.tripStatValue{
+  font-size:22px;
+  font-weight:800;
+}
+
+.mapShell{
+  position:relative;
+  flex:1;
+  min-height:315px;
+  overflow:hidden;
+  border-radius:21px;
+  background:#15191d;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+}
+
+#tripMap{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  background:#15191d;
+}
+
+.mapBadge{
+  position:absolute;
+  z-index:500;
+  left:14px;
+  bottom:14px;
+  padding:9px 12px;
+  border-radius:13px;
+
+  background:
+    rgba(8,10,13,.88);
+
+  border:
+    1px solid
+    rgba(255,255,255,.12);
+
+  backdrop-filter:blur(10px);
+  font-size:12px;
+  pointer-events:none;
+}
+
+.tripEmpty{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  min-height:400px;
+}
+
+.tripEmptyIcon{
+  font-size:50px;
+  margin-bottom:16px;
+}
+
+.tripEmptyTitle{
+  font-size:29px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+
+.tripEmptyText{
+  max-width:390px;
+  color:#929aa2;
+  font-size:16px;
+  line-height:1.5;
+}
+
+.hidden{
+  display:none !important;
+}
+
+/* --------------------------------------------------
+   MAP MARKERS
+-------------------------------------------------- */
+
+.carMarker{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#111;
+  border:3px solid #fff;
+  box-shadow:
+    0 4px 18px
+    rgba(0,0,0,.45);
+  font-size:22px;
+}
+
+.destinationMarker{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#1ed760;
+  border:3px solid #fff;
+  box-shadow:
+    0 4px 18px
+    rgba(0,0,0,.45);
+  font-size:20px;
+}
+
+/* --------------------------------------------------
+   VOLUME + CLIMATE
+-------------------------------------------------- */
+
+.climate{
+  margin-top:20px;
+
+  background:
+    rgba(255,255,255,.06);
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:24px;
+  padding:16px 24px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:24px;
+}
+
+.climateGroup{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.climateDivider{
+  width:1px;
+  height:55px;
+
+  background:
+    rgba(255,255,255,.1);
+}
+
+.climateTitle{
+  font-weight:750;
+  font-size:17px;
+}
+
+.climateSub{
+  color:#8f979f;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.tempControls{
+  display:flex;
+  align-items:center;
+  gap:17px;
+}
+
+.tempBtn{
+  border-radius:50%;
+  width:49px;
+  height:49px;
+}
+
+.temperature{
+  font-size:34px;
+  font-weight:800;
+  min-width:100px;
+  text-align:center;
+}
+
+.setTemp{
+  border:0;
+  border-radius:14px;
+  padding:13px 20px;
+  background:#1ed760;
+  color:#06130a;
+  font-weight:800;
+}
+
+.message{
+  height:20px;
+  text-align:center;
+  margin-top:8px;
+  color:#999;
+}
+
+.success{
+  color:#1ed760;
+}
+
+.error{
+  color:#ff7373;
+}
+
+/* --------------------------------------------------
+   RESPONSIVE
+-------------------------------------------------- */
+
+@media(max-width:900px){
+
+  .dashboard{
+    grid-template-columns:1fr;
+  }
+
+  .tripPanel{
+    min-height:500px;
+  }
+
+  .climate{
+    flex-direction:column;
+  }
+
+  .climateDivider{
+    width:80%;
+    height:1px;
+  }
+
+  .climateGroup{
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- WELCOME -->
+
+<div id="welcomeScreen">
+
+  <div
+    id="welcomeContent"
+    class="welcomeContent"
+  >
+
+    <div class="welcomeLogo">
+      ♪
+    </div>
+
+    <div
+      id="welcomeEyebrow"
+      class="welcomeEyebrow"
+    >
+      YOUR RIDE IS READY
+    </div>
+
+    <h1
+      id="welcomeTitle"
+      class="welcomeTitle waitingTitle"
+    >
+      Ready for your next ride
+    </h1>
+
+    <div
+      id="welcomeMessage"
+      class="welcomeMessage"
+    >
+      Your passenger experience is ready.
+    </div>
+
+    <button
+      id="soundButton"
+      onclick="toggleWelcomeSound()"
+      style="
+        margin-top:28px;
+        border:1px solid rgba(255,255,255,.15);
+        border-radius:18px;
+        padding:15px 24px;
+        background:rgba(255,255,255,.08);
+        color:white;
+        font-size:17px;
+        font-weight:800;
+      "
+    >
+      🔇 Welcome Sound: OFF
+    </button>
+
+    <div
+      id="welcomeFeatures"
+      class="welcomeFeatures"
+      style="display:none"
+    >
+
+      <div class="welcomeFeature">
+        🎵 Choose your music
+      </div>
+
+      <div class="welcomeFeature">
+        🌡️ Adjust your comfort
+      </div>
+
+      <div class="welcomeFeature">
+        🗺️ Follow your trip
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- APP -->
+
+<div class="app">
+
+<header class="topbar">
+
+  <div class="brand welcomeBrand">
+
+    <span class="brandWelcome">
+      Welcome,
+    </span>
+
+    <span
+      id="mainPassengerName"
+      class="brandPassenger"
+    >
+      Guest
+    </span>
+
+  </div>
+
+  <div class="status">
+
+    <span class="dot"></span>
+
+    Connected to Tesla
+
+  </div>
+
+</header>
+
+<div class="dashboard">
+
+<!-- MUSIC -->
+
+<section class="panel">
+
+  <div class="musicTop">
+
+    <img
+      id="artwork"
+      class="artwork"
+      alt="Album artwork"
+    >
+
+    <div class="musicInfo">
+
+      <div class="eyebrow">
+        Now Playing
+      </div>
+
+      <h1
+        id="songTitle"
+        class="title"
+      >
+        Your Music
+      </h1>
+
+      <div
+        id="artistName"
+        class="artist"
+      >
+        Playing in your Tesla
+      </div>
+
+      <div class="progressRow">
+
+        <span id="currentTime">
+          0:00
+        </span>
+
+        <div class="progress">
+
+          <div
+            id="progressFill"
+            class="progressFill"
+          ></div>
+
+        </div>
+
+        <span id="duration">
+          --:--
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="media">
+
+    <button
+      onclick="control('previous')"
+      aria-label="Previous track"
+    >
+      ◀
+    </button>
+
+    <button
+      id="playButton"
+      class="play"
+      onclick="control('playPause')"
+      aria-label="Play or pause"
+    >
+      ▶
+    </button>
+
+    <button
+      onclick="control('next')"
+      aria-label="Next track"
+    >
+      ▶
+    </button>
+
+  </div>
+
+  <!-- SPOTIFY SEARCH -->
+
+  <div class="searchBox">
+
+    <div class="searchBar">
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Search Spotify…"
+        onkeydown="
+          if(event.key==='Enter')
+          searchSpotify()
+        "
+      >
+
+      <button
+        class="searchButton"
+        onclick="searchSpotify()"
+      >
+        Search
+      </button>
+
+    </div>
+
+    <div
+      id="results"
+      class="results"
+    ></div>
+
+  </div>
+
+  <!-- VIBES -->
+
+  <div class="vibeSection">
+
+    <div class="vibeTitle">
+      Choose Your Vibe
+    </div>
+
+    <div class="vibeButtons">
+
+      <button
+        onclick="playVibe('goodvibes')"
+      >
+        ✨ Good Vibes
+      </button>
+
+      <button
+        onclick="playVibe('chill')"
+      >
+        🌴 Chill Ride
+      </button>
+
+      <button
+        onclick="playVibe('hits')"
+      >
+        🔥 Today's Hits
+      </button>
+
+      <button
+        onclick="playVibe('rnb')"
+      >
+        ❤️ R&amp;B
+      </button>
+
+      <button
+        onclick="playVibe('throwbacks')"
+      >
+        🪩 Throwbacks
+      </button>
+
+      <button
+        onclick="playVibe('party')"
+      >
+        🎉 Party
+      </button>
+
+      <button
+        onclick="playVibe('latino')"
+      >
+        🇪🇸 Latino
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+<!-- TRIP -->
+
+<section class="panel tripPanel">
+
+  <div
+    id="tripActive"
+    class="hidden"
+  >
+
+    <div class="tripHeader">
+
+      <div class="eyebrow">
+        Your Trip
+      </div>
+
+      <h1
+        id="tripDestination"
+        class="tripDestination"
+      >
+        Destination
+      </h1>
+
+    </div>
+
+    <div class="tripStats">
+
+      <div class="tripStat">
+
+        <div class="tripStatLabel">
+          Time Remaining
+        </div>
+
+        <div
+          id="tripTime"
+          class="tripStatValue"
+        >
+          --
+        </div>
+
+      </div>
+
+      <div class="tripStat">
+
+        <div class="tripStatLabel">
+          Distance
+        </div>
+
+        <div
+          id="tripDistance"
+          class="tripStatValue"
+        >
+          --
+        </div>
+
+      </div>
+
+      <div class="tripStat">
+
+        <div class="tripStatLabel">
+          Traffic Delay
+        </div>
+
+        <div
+          id="tripTraffic"
+          class="tripStatValue"
+        >
+          --
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="mapShell">
+
+      <div id="tripMap"></div>
+
+      <div class="mapBadge">
+        🚘 Live vehicle location
+      </div>
+
+    </div>
+
+  </div>
+
+  <div
+    id="tripEmpty"
+    class="tripEmpty"
+  >
+
+    <div>
+
+      <div class="tripEmptyIcon">
+        🗺️
+      </div>
+
+      <div class="tripEmptyTitle">
+        Enjoy the ride
+      </div>
+
+      <div class="tripEmptyText">
+        Your destination, ETA and live trip
+        information will appear here when
+        navigation is active.
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+</div>
+
+<!-- VOLUME + CLIMATE -->
+
+<section class="climate">
+
+  <div class="climateGroup">
+
+    <div>
+
+      <div class="climateTitle">
+        🔊 Cabin Volume
+      </div>
+
+      <div class="climateSub">
+        Passenger audio
+      </div>
+
+    </div>
+
+    <div class="volumeBtns">
+
+      <button
+        class="smallBtn"
+        onclick="control('volumeDown')"
+      >
+        −
+      </button>
+
+      <button
+        class="smallBtn"
+        onclick="control('volumeUp')"
+      >
+        +
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="climateDivider"></div>
+
+  <div class="climateGroup">
+
+    <div>
+
+      <div class="climateTitle">
+        🌡️ Cabin Climate
+      </div>
+
+      <div class="climateSub">
+        Passenger comfort · 65–72°F
+      </div>
+
+    </div>
+
+    <div class="tempControls">
+
+      <button
+        class="tempBtn"
+        onclick="changeTemp(-1)"
+      >
+        −
+      </button>
+
+      <div
+        id="temperature"
+        class="temperature"
+      >
+        70°F
+      </div>
+
+      <button
+        class="tempBtn"
+        onclick="changeTemp(1)"
+      >
+        +
+      </button>
+
+    </div>
+
+    <button
+      class="setTemp"
+      onclick="setTemperature()"
+    >
+      Set Temperature
+    </button>
+
+  </div>
+
+</section>
+
+<div
+  id="message"
+  class="message"
+></div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+/* --------------------------------------------------
+   STATE
+-------------------------------------------------- */
+
+const MIN_TEMP=65;
+const MAX_TEMP=72;
+
+let selectedTemperature=70;
+
+let progressMs=0;
+let durationMs=0;
+let playing=false;
+
+let currentRideId=null;
+let welcomedRideId=null;
+let welcomeTimeout=null;
+
+let tripMap=null;
+let vehicleMarker=null;
+let destinationMarker=null;
+let tripBoundsSet=false;
+
+let welcomeSoundEnabled=false;
+
+const message=
+  document.getElementById(
+    "message"
+  );
+
+const welcomeScreen=
+  document.getElementById(
+    "welcomeScreen"
+  );
+
+const welcomeTitle=
+  document.getElementById(
+    "welcomeTitle"
+  );
+
+const welcomeMessage=
+  document.getElementById(
+    "welcomeMessage"
+  );
+
+const welcomeEyebrow=
+  document.getElementById(
+    "welcomeEyebrow"
+  );
+
+const welcomeFeatures=
+  document.getElementById(
+    "welcomeFeatures"
+  );
+
+/* --------------------------------------------------
+   API
+-------------------------------------------------- */
+
+async function api(
+  url,
+  options={}
+){
+
+  const response=
+    await fetch(
+      url,
+      {
+        credentials:
+          "same-origin",
+
+        ...options
+      }
+    );
+
+  let data={};
+
+  try{
+    data=
+      await response.json();
+  }catch{}
+
+  if(!response.ok){
+
+    throw new Error(
+      data.error||
+      "Request failed."
+    );
+  }
+
+  return data;
+}
+
+function showMessage(
+  text,
+  type=""
+){
+
+  message.textContent=text;
+
+  message.className=
+    "message "+type;
+
+  if(text){
+
+    setTimeout(()=>{
+
+      if(
+        message.textContent===
+        text
+      ){
+
+        message.textContent="";
+
+        message.className=
+          "message";
+      }
+
+    },3000);
+  }
+}
+
+/* --------------------------------------------------
+   WELCOME SOUND
+-------------------------------------------------- */
+
+function toggleWelcomeSound(){
+
+  const button=
+    document.getElementById(
+      "soundButton"
+    );
+
+  if(!welcomeSoundEnabled){
+
+    window
+      .speechSynthesis
+      .cancel();
+
+    const unlock=
+      new SpeechSynthesisUtterance(
+        "Welcome sound enabled."
+      );
+
+    unlock.lang="en-US";
+    unlock.volume=1;
+    unlock.rate=.92;
+
+    window
+      .speechSynthesis
+      .speak(unlock);
+
+    welcomeSoundEnabled=true;
+
+    button.textContent=
+      "🔊 Welcome Sound: ON";
+
+    button.style.background=
+      "rgba(30,215,96,.18)";
+
+    button.style.borderColor=
+      "rgba(30,215,96,.45)";
+
+  }else{
+
+    window
+      .speechSynthesis
+      .cancel();
+
+    welcomeSoundEnabled=false;
+
+    button.textContent=
+      "🔇 Welcome Sound: OFF";
+
+    button.style.background=
+      "rgba(255,255,255,.08)";
+
+    button.style.borderColor=
+      "rgba(255,255,255,.15)";
+  }
+}
+
+function speakPassengerWelcome(
+  passengerName
+){
+
+  if(!welcomeSoundEnabled){
+    return;
+  }
+
+  if(
+    !(
+      "speechSynthesis"
+      in window
+    )
+  ){
+    return;
+  }
+
+  try{
+
+    window
+      .speechSynthesis
+      .cancel();
+
+    const safeName=
+      String(
+        passengerName||""
+      ).trim();
+
+    const greeting=
+      safeName
+        ?`Welcome aboard, ${safeName}!`
+        :"Welcome aboard!";
+
+    const text=
+      `${greeting} `+
+      `We're glad to have you with us today. `+
+      `The screen in front of you is yours to enjoy. `+
+      `Feel free to choose your music, adjust the cabin temperature, `+
+      `and follow along with your trip. `+
+      `Sit back, relax, and enjoy the ride!`;
+
+    const speech=
+      new SpeechSynthesisUtterance(
+        text
+      );
+
+    speech.lang="en-US";
+    speech.rate=.92;
+    speech.pitch=1;
+    speech.volume=1;
+
+    const voices=
+      window
+        .speechSynthesis
+        .getVoices();
+
+    const preferredVoice=
+      voices.find(
+        voice=>
+          voice.lang==="en-US" &&
+          (
+            voice.name.includes(
+              "Siri"
+            ) ||
+            voice.name.includes(
+              "Samantha"
+            )
+          )
+      ) ||
+
+      voices.find(
+        voice=>
+          voice.lang==="en-US"
+      );
+
+    if(preferredVoice){
+
+      speech.voice=
+        preferredVoice;
+    }
+
+    setTimeout(()=>{
+
+      try{
+
+        window
+          .speechSynthesis
+          .speak(speech);
+
+      }catch(error){
+
+        console.log(
+          "Welcome speech unavailable:",
+          error.message
+        );
+      }
+
+    },700);
+
+  }catch(error){
+
+    console.log(
+      "Welcome speech unavailable:",
+      error.message
+    );
+  }
+}
+
+/* --------------------------------------------------
+   RIDE
+-------------------------------------------------- */
+
+function showWaitingScreen(){
+
+  if(welcomeTimeout){
+
+    clearTimeout(
+      welcomeTimeout
+    );
+
+    welcomeTimeout=null;
+  }
+
+  welcomeScreen
+    .classList
+    .remove("hidden");
+
+  welcomeEyebrow.textContent=
+    "YOUR RIDE IS READY";
+
+  welcomeTitle.textContent=
+    "Ready for your next ride";
+
+  welcomeTitle
+    .classList
+    .add("waitingTitle");
+
+  welcomeMessage.textContent=
+    "Your passenger experience is ready.";
+
+  welcomeFeatures.style.display=
+    "none";
+
+  document
+    .getElementById(
+      "soundButton"
+    )
+    .style.display=
+      "inline-block";
+}
+
+function showPassengerWelcome(
+  passengerName,
+  rideId
+){
+
+  if(welcomeTimeout){
+
+    clearTimeout(
+      welcomeTimeout
+    );
+  }
+
+  welcomedRideId=rideId;
+
+  document
+    .getElementById(
+      "mainPassengerName"
+    )
+    .textContent=
+      passengerName;
+
+  welcomeScreen
+    .classList
+    .remove("hidden");
+
+  welcomeEyebrow.textContent="";
+
+  welcomeTitle
+    .classList
+    .remove("waitingTitle");
+
+  welcomeTitle.innerHTML=
+    `<span class="welcomeScript">Welcome,</span>`+
+    `<span class="welcomePassengerName"></span>`;
+
+  welcomeTitle
+    .querySelector(
+      ".welcomePassengerName"
+    )
+    .textContent=
+      passengerName;
+
+  welcomeMessage.textContent=
+    "Sit back, relax, and enjoy the ride. Choose your music, adjust your comfort, or follow your trip.";
+
+  welcomeFeatures.style.display=
+    "flex";
+
+  document
+    .getElementById(
+      "soundButton"
+    )
+    .style.display=
+      "none";
+
+  speakPassengerWelcome(
+    passengerName
+  );
+
+  welcomeTimeout=
+    setTimeout(()=>{
+
+      welcomeScreen
+        .classList
+        .add("hidden");
+
+      welcomeTimeout=null;
+
+      setTimeout(()=>{
+
+        if(tripMap){
+
+          tripMap
+            .invalidateSize();
+        }
+
+      },200);
+
+    },8000);
+}
+
+async function checkRide(){
+
+  try{
+
+    const ride=
+      await api(
+        "/api/ride"
+      );
+
+    if(!ride.active){
+
+      currentRideId=null;
+
+      welcomedRideId=null;
+
+      tripBoundsSet=false;
+
+      showWaitingScreen();
+
+      return;
+    }
+
+    currentRideId=
+      ride.rideId;
+
+    if(
+      ride.rideId &&
+      ride.rideId!==
+        welcomedRideId
+    ){
+
+      tripBoundsSet=false;
+
+      showPassengerWelcome(
+        ride.passengerName||
+        "there",
+
+        ride.rideId
+      );
+    }
+
+  }catch(error){
+
+    console.log(
+      "Ride status unavailable:",
+      error.message
+    );
+  }
+}
+
+/* --------------------------------------------------
+   TESLA CONTROLS
+-------------------------------------------------- */
+
+async function control(
+  action
+){
+
+  try{
+
+    await api(
+      "/api/control",
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            action
+          })
+      }
+    );
+
+    if(
+      action===
+      "playPause"
+    ){
+
+      playing=
+        !playing;
+
+      updatePlayButton();
+    }
+
+    setTimeout(
+      loadNowPlaying,
+      700
+    );
+
+  }catch(error){
+
+    showMessage(
+      error.message,
+      "error"
+    );
+  }
+}
+
+/* --------------------------------------------------
+   CLIMATE
+-------------------------------------------------- */
+
+function changeTemp(
+  amount
+){
+
+  selectedTemperature=
+    Math.max(
+      MIN_TEMP,
+
+      Math.min(
+        MAX_TEMP,
+
+        selectedTemperature+
+        amount
+      )
+    );
+
+  document
+    .getElementById(
+      "temperature"
+    )
+    .textContent=
+      selectedTemperature+
+      "°F";
+}
+
+async function setTemperature(){
+
+  try{
+
+    await api(
+      "/api/control",
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            action:
+              "temperature",
+
+            temperatureF:
+              selectedTemperature
+          })
+      }
+    );
+
+    showMessage(
+      `Cabin set to ${selectedTemperature}°F`,
+      "success"
+    );
+
+  }catch(error){
+
+    showMessage(
+      error.message,
+      "error"
+    );
+  }
+}
+
+/* --------------------------------------------------
+   NOW PLAYING
+-------------------------------------------------- */
+
+function formatTime(ms){
+
+  if(
+    !Number.isFinite(ms) ||
+    ms<0
+  ){
+    return "0:00";
+  }
+
+  const total=
+    Math.floor(
+      ms/1000
+    );
+
+  const min=
+    Math.floor(
+      total/60
+    );
+
+  const sec=
+    String(
+      total%60
+    )
+    .padStart(
+      2,
+      "0"
+    );
+
+  return `${min}:${sec}`;
+}
+
+function updateProgress(){
+
+  document
+    .getElementById(
+      "currentTime"
+    )
+    .textContent=
+      formatTime(
+        progressMs
+      );
+
+  document
+    .getElementById(
+      "duration"
+    )
+    .textContent=
+      durationMs
+        ?formatTime(
+            durationMs
+          )
+        :"--:--";
+
+  const pct=
+    durationMs
+      ?Math.min(
+          100,
+          (
+            progressMs/
+            durationMs
+          )*100
+        )
+      :0;
+
+  document
+    .getElementById(
+      "progressFill"
+    )
+    .style.width=
+      pct+"%";
+}
+
+function updatePlayButton(){
+
+  document
+    .getElementById(
+      "playButton"
+    )
+    .textContent=
+      playing
+        ?"❚❚"
+        :"▶";
+}
+
+async function loadNowPlaying(){
+
+  try{
+
+    const data=
+      await api(
+        "/api/spotify/now-playing"
+      );
+
+    if(!data.item){
+
+      playing=false;
+
+      updatePlayButton();
+
+      return;
+    }
+
+    playing=
+      data.playing;
+
+    progressMs=
+      data.progressMs||0;
+
+    durationMs=
+      data.item.durationMs||0;
+
+    document
+      .getElementById(
+        "songTitle"
+      )
+      .textContent=
+        data.item.name||
+        "Unknown Track";
+
+    document
+      .getElementById(
+        "artistName"
+      )
+      .textContent=
+        data.item.artist||
+        "Unknown Artist";
+
+    const artwork=
+      document
+        .getElementById(
+          "artwork"
+        );
+
+    if(
+      data.item.artwork
+    ){
+
+      artwork.src=
+        data.item.artwork;
+    }
+
+    updatePlayButton();
+
+    updateProgress();
+
+  }catch(error){
+
+    console.log(
+      "Now playing unavailable:",
+      error.message
+    );
+  }
+}
+
+/* --------------------------------------------------
+   SPOTIFY SEARCH
+-------------------------------------------------- */
+
+async function searchSpotify(){
+
+  const input=
+    document
+      .getElementById(
+        "searchInput"
+      );
+
+  const results=
+    document
+      .getElementById(
+        "results"
+      );
+
+  const query=
+    input.value.trim();
+
+  if(!query){
+    return;
+  }
+
+  results.innerHTML=
+    "<div style='padding:15px;color:#999'>Searching…</div>";
+
+  try{
+
+    const data=
+      await api(
+        "/api/spotify/search?q="+
+        encodeURIComponent(
+          query
+        )
+      );
+
+    results.innerHTML="";
+
+    if(
+      !data.tracks?.length
+    ){
+
+      results.innerHTML=
+        "<div style='padding:15px;color:#999'>No tracks found.</div>";
+
+      return;
+    }
+
+    for(
+      const track
+      of data.tracks
+    ){
+
+      const row=
+        document
+          .createElement(
+            "div"
+          );
+
+      row.className=
+        "track";
+
+      const img=
+        document
+          .createElement(
+            "img"
+          );
+
+      if(track.artwork){
+
+        img.src=
+          track.artwork;
+      }
+
+      img.alt="";
+
+      const info=
+        document
+          .createElement(
+            "div"
+          );
+
+      const name=
+        document
+          .createElement(
+            "div"
+          );
+
+      name.className=
+        "trackName";
+
+      name.textContent=
+        track.name;
+
+      const artist=
+        document
+          .createElement(
+            "div"
+          );
+
+      artist.className=
+        "trackArtist";
+
+      artist.textContent=
+        track.artist;
+
+      info.append(
+        name,
+        artist
+      );
+
+      const play=
+        document
+          .createElement(
+            "div"
+          );
+
+      play.className=
+        "trackPlay";
+
+      play.textContent=
+        "▶";
+
+      row.append(
+        img,
+        info,
+        play
+      );
+
+      row.onclick=
+        ()=>
+          playTrack(
+            track
+          );
+
+      results
+        .appendChild(
+          row
+        );
+    }
+
+  }catch(error){
+
+    results.innerHTML="";
+
+    showMessage(
+      error.message,
+      "error"
+    );
+  }
+}
+
+async function playTrack(
+  track
+){
+
+  showMessage(
+    `Playing ${track.name}…`
+  );
+
+  try{
+
+    await api(
+      "/api/spotify/play",
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            uri:
+              track.uri
+          })
+      }
+    );
+
+    playing=true;
+
+    updatePlayButton();
+
+    document
+      .getElementById(
+        "songTitle"
+      )
+      .textContent=
+        track.name;
+
+    document
+      .getElementById(
+        "artistName"
+      )
+      .textContent=
+        track.artist;
+
+    if(track.artwork){
+
+      document
+        .getElementById(
+          "artwork"
+        )
+        .src=
+          track.artwork;
+    }
+
+    progressMs=0;
+
+    durationMs=
+      track.durationMs||0;
+
+    updateProgress();
+
+    showMessage(
+      `Playing ${track.name}`,
+      "success"
+    );
+
+    setTimeout(
+      loadNowPlaying,
+      1000
+    );
+
+  }catch(error){
+
+    showMessage(
+      error.message,
+      "error"
+    );
+  }
+}
+
+/* --------------------------------------------------
+   SPOTIFY VIBES
+-------------------------------------------------- */
+
+async function playVibe(
+  vibe
+){
+
+  showMessage(
+    "Starting your vibe…"
+  );
+
+  try{
+
+    await api(
+      "/api/spotify/vibe",
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            vibe
+          })
+      }
+    );
+
+    playing=true;
+
+    updatePlayButton();
+
+    showMessage(
+      "Your vibe is playing",
+      "success"
+    );
+
+    setTimeout(
+      loadNowPlaying,
+      1000
+    );
+
+  }catch(error){
+
+    showMessage(
+      error.message,
+      "error"
+    );
+  }
+}
+
+/* --------------------------------------------------
+   MAP
+-------------------------------------------------- */
+
+function createTripMap(){
+
+  if(
+    tripMap ||
+    typeof L===
+      "undefined"
+  ){
+    return;
+  }
+
+  tripMap=
+    L.map(
+      "tripMap",
+      {
+        zoomControl:false,
+        attributionControl:true
+      }
+    );
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom:19,
+      attribution:
+        "&copy; OpenStreetMap"
+    }
+  )
+  .addTo(
+    tripMap
+  );
+
+  L.control
+    .zoom({
+      position:
+        "topright"
+    })
+    .addTo(
+      tripMap
+    );
+}
+
+function validCoordinate(
+  latitude,
+  longitude
+){
+
+  return (
+    Number.isFinite(
+      latitude
+    ) &&
+
+    Number.isFinite(
+      longitude
+    ) &&
+
+    latitude>=-90 &&
+    latitude<=90 &&
+
+    longitude>=-180 &&
+    longitude<=180
+  );
+}
+
+function updateTripMap(
+  data
+){
+
+  const vehicleLat=
+    Number(
+      data.vehicle
+        ?.latitude
+    );
+
+  const vehicleLng=
+    Number(
+      data.vehicle
+        ?.longitude
+    );
+
+  const destinationLat=
+    Number(
+      data
+        .destinationLocation
+        ?.latitude
+    );
+
+  const destinationLng=
+    Number(
+      data
+        .destinationLocation
+        ?.longitude
+    );
+
+  const hasVehicle=
+    validCoordinate(
+      vehicleLat,
+      vehicleLng
+    );
+
+  const hasDestination=
+    validCoordinate(
+      destinationLat,
+      destinationLng
+    );
+
+  if(
+    !hasVehicle &&
+    !hasDestination
+  ){
+    return;
+  }
+
+  createTripMap();
+
+  if(!tripMap){
+    return;
+  }
+
+  if(hasVehicle){
+
+    const carIcon=
+      L.divIcon({
+        className:"",
+
+        html:
+          '<div class="carMarker">🚘</div>',
+
+        iconSize:[
+          42,
+          42
+        ],
+
+        iconAnchor:[
+          21,
+          21
+        ]
+      });
+
+    if(
+      !vehicleMarker
+    ){
+
+      vehicleMarker=
+        L.marker(
+          [
+            vehicleLat,
+            vehicleLng
+          ],
+          {
+            icon:
+              carIcon
+          }
+        )
+        .addTo(
+          tripMap
+        );
+
+    }else{
+
+      vehicleMarker
+        .setLatLng(
+          [
+            vehicleLat,
+            vehicleLng
+          ]
+        );
+    }
+  }
+
+  if(hasDestination){
+
+    const destinationIcon=
+      L.divIcon({
+        className:"",
+
+        html:
+          '<div class="destinationMarker">🏁</div>',
+
+        iconSize:[
+          38,
+          38
+        ],
+
+        iconAnchor:[
+          19,
+          19
+        ]
+      });
+
+    if(
+      !destinationMarker
+    ){
+
+      destinationMarker=
+        L.marker(
+          [
+            destinationLat,
+            destinationLng
+          ],
+          {
+            icon:
+              destinationIcon
+          }
+        )
+        .addTo(
+          tripMap
+        );
+
+    }else{
+
+      destinationMarker
+        .setLatLng(
+          [
+            destinationLat,
+            destinationLng
+          ]
+        );
+    }
+  }
+
+  if(!tripBoundsSet){
+
+    if(
+      hasVehicle &&
+      hasDestination
+    ){
+
+      const bounds=
+        L.latLngBounds([
+          [
+            vehicleLat,
+            vehicleLng
+          ],
+          [
+            destinationLat,
+            destinationLng
+          ]
+        ]);
+
+      tripMap
+        .fitBounds(
+          bounds,
+          {
+            padding:[
+              45,
+              45
+            ],
+
+            maxZoom:15
+          }
+        );
+
+    }else if(
+      hasVehicle
+    ){
+
+      tripMap
+        .setView(
+          [
+            vehicleLat,
+            vehicleLng
+          ],
+          14
+        );
+
+    }else{
+
+      tripMap
+        .setView(
+          [
+            destinationLat,
+            destinationLng
+          ],
+          14
+        );
+    }
+
+    tripBoundsSet=true;
+  }
+}
+
+/* --------------------------------------------------
+   TRIP DATA
+-------------------------------------------------- */
+
+async function loadTrip(){
+
+  if(!currentRideId){
+    return;
+  }
+
+  try{
+
+    const data=
+      await api(
+        "/api/trip"
+      );
+
+    const active=
+      Boolean(
+        data.active &&
+        data.navigationActive
+      );
+
+    document
+      .getElementById(
+        "tripActive"
+      )
+      .classList
+      .toggle(
+        "hidden",
+        !active
+      );
+
+    document
+      .getElementById(
+        "tripEmpty"
+      )
+      .classList
+      .toggle(
+        "hidden",
+        active
+      );
+
+    if(!active){
+
+      tripBoundsSet=false;
+
+      return;
+    }
+
+    document
+      .getElementById(
+        "tripDestination"
+      )
+      .textContent=
+        data.destination||
+        "Destination";
+
+    const minutes=
+      Number(
+        data.minutesRemaining
+      );
+
+    document
+      .getElementById(
+        "tripTime"
+      )
+      .textContent=
+        Number.isFinite(
+          minutes
+        )
+          ?`${Math.round(minutes)} min`
+          :"--";
+
+    const miles=
+      Number(
+        data.milesRemaining
+      );
+
+    document
+      .getElementById(
+        "tripDistance"
+      )
+      .textContent=
+        Number.isFinite(
+          miles
+        )
+          ?`${miles.toFixed(1)} mi`
+          :"--";
+
+    const traffic=
+      Number(
+        data
+          .trafficDelayMinutes
+      );
+
+    document
+      .getElementById(
+        "tripTraffic"
+      )
+      .textContent=
+        Number.isFinite(
+          traffic
+        )
+          ?(
+            traffic>0
+              ?`+${Math.round(traffic)} min`
+              :"No delay"
+          )
+          :"--";
+
+    updateTripMap(
+      data
+    );
+
+    if(tripMap){
+
+      setTimeout(()=>{
+
+        tripMap
+          .invalidateSize();
+
+      },100);
+    }
+
+  }catch(error){
+
+    console.log(
+      "Trip information unavailable:",
+      error.message
+    );
+  }
+}
+
+/* --------------------------------------------------
+   TIMERS
+-------------------------------------------------- */
+
+setInterval(()=>{
+
+  if(
+    playing &&
+    durationMs
+  ){
+
+    progressMs=
+      Math.min(
+        durationMs,
+        progressMs+1000
+      );
+
+    updateProgress();
+  }
+
+},1000);
+
+/* Ride */
+
+checkRide();
+
+setInterval(
+  checkRide,
+  2000
+);
+
+/* Spotify */
+
+loadNowPlaying();
+
+setInterval(
+  loadNowPlaying,
+  5000
+);
+
+/* Trip */
+
+setInterval(()=>{
+
+  if(currentRideId){
+
+    loadTrip();
+  }
+
+},15000);
+
+</script>
+
+</body>
+</html>
