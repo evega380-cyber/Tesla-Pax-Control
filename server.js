@@ -1788,36 +1788,38 @@ app.post(
           .toLowerCase();
 
       /*
-       * Passenger can only choose
-       * one of these approved vibes.
+       * Approved passenger playlists.
        */
       const vibes = {
         goodvibes:
-          "feel good happy upbeat",
+          "spotify:playlist:37i9dQZF1EIdDn5P759aRj",
 
         chill:
-          "chill relaxing road trip",
+          "spotify:playlist:37i9dQZF1EVHGWrwldPRtj",
 
         hits:
-          "today top hits",
+          "spotify:playlist:37i9dQZF1DX1gRalH1mWrP",
 
         rnb:
-          "r&b hits",
+          "spotify:playlist:37i9dQZF1DX6VDO8a6cQME",
 
         throwbacks:
-          "2000s throwback hits",
+          "spotify:playlist:3QZf1TNPVe2J1Dp21UJCrW",
 
         party:
-          "party dance hits",
+          "spotify:playlist:37i9dQZF1EIeYvPpy9CZHr",
 
         latino:
-          "latin hits reggaeton bachata salsa"
+          "spotify:playlist:0q1di38xTtJS21GjOtaeNb",
+
+        faith:
+          "spotify:playlist:37i9dQZF1DWUileP28ODwg"
       };
 
-      const searchTerm =
+      const playlistUri =
         vibes[vibe];
 
-      if (!searchTerm) {
+      if (!playlistUri) {
         return res
           .status(400)
           .json({
@@ -1856,44 +1858,33 @@ app.post(
           });
       }
 
-      /*
-       * Search Spotify for tracks
-       * matching the selected vibe.
-       */
-      const results =
-        await spotifyRequest(
-          `/search?type=track&limit=10&q=${encodeURIComponent(
-            searchTerm
-          )}`
+      const deviceId =
+        encodeURIComponent(
+          tesla.id
         );
 
-      const tracks =
-        (results?.tracks?.items || [])
-          .filter(
-            track =>
-              /^spotify:track:[A-Za-z0-9]+$/.test(
-                track?.uri || ""
-              )
-          )
-          .slice(0, 10);
-
-      if (!tracks.length) {
-        return res
-          .status(404)
-          .json({
-            ok: false,
-            error:
-              "No music found for this vibe."
-          });
-      }
-
       /*
-       * Start the first track.
+       * Turn Spotify shuffle ON
+       * for the Tesla player.
        */
       await spotifyRequest(
-        `/me/player/play?device_id=${encodeURIComponent(
-          tesla.id
-        )}`,
+        `/me/player/shuffle?state=true&device_id=${deviceId}`,
+        {
+          method: "PUT"
+        }
+      );
+
+      /*
+       * Start the actual Spotify
+       * playlist context.
+       *
+       * Spotify now controls the
+       * continuing playlist instead
+       * of Pax Control manually
+       * queueing search results.
+       */
+      await spotifyRequest(
+        `/me/player/play?device_id=${deviceId}`,
         {
           method: "PUT",
 
@@ -1904,42 +1895,96 @@ app.post(
 
           body:
             JSON.stringify({
-              uris: [
-                tracks[0].uri
-              ]
+              context_uri:
+                playlistUri
             })
         }
       );
 
       /*
-       * Queue the remaining tracks.
+       * Give Spotify a moment to
+       * switch playback contexts.
        */
-      for (
-        const track
-        of tracks.slice(1)
-      ) {
-        try {
+      await new Promise(
+        resolve =>
+          setTimeout(
+            resolve,
+            600
+          )
+      );
+
+      /*
+       * Read the track Spotify
+       * actually started so the
+       * passenger screen can update
+       * immediately.
+       */
+      let track = null;
+
+      try {
+        const current =
           await spotifyRequest(
-            `/me/player/queue?uri=${encodeURIComponent(
-              track.uri
-            )}&device_id=${encodeURIComponent(
-              tesla.id
-            )}`,
-            {
-              method: "POST"
-            }
+            "/me/player/currently-playing"
           );
-        } catch (queueError) {
-          console.error(
-            "Spotify vibe queue error:",
-            queueError.message
-          );
+
+        if (current?.item) {
+          track = {
+            name:
+              current.item.name ||
+              "Unknown Track",
+
+            artist:
+              current.item.artists
+                ?.map(
+                  artist =>
+                    artist.name
+                )
+                .join(", ") || "",
+
+            album:
+              current.item.album
+                ?.name || "",
+
+            artwork:
+              current.item.album
+                ?.images?.[0]?.url ||
+              null,
+
+            durationMs:
+              current.item
+                .duration_ms || 0,
+
+            progressMs:
+              current.progress_ms || 0,
+
+            playing:
+              Boolean(
+                current.is_playing
+              ),
+
+            uri:
+              current.item.uri
+          };
         }
+      } catch (nowPlayingError) {
+        /*
+         * Playback already succeeded,
+         * so don't fail the Vibe just
+         * because Now Playing took
+         * longer to refresh.
+         */
+        console.log(
+          "Spotify vibe now-playing delay:",
+          nowPlayingError.message
+        );
       }
 
       return res.json({
         ok: true,
-        vibe
+        vibe,
+        playlistUri,
+        shuffle: true,
+        track
       });
 
     } catch (error) {
