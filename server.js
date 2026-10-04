@@ -257,6 +257,20 @@ function loadCurrentRide() {
             )
           : "",
 
+      rideApp:
+        data?.active
+          ? String(
+              data?.rideApp || "other"
+            )
+          : "other",
+
+      language:
+        data?.active
+          ? String(
+              data?.language || "en"
+            )
+          : "en",
+
       rideId:
         data?.active
           ? String(
@@ -279,7 +293,6 @@ function loadCurrentRide() {
     return emptyRide();
   }
 }
-
 
 /*
  * -------------------------------------------------------
