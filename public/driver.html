@@ -73,7 +73,8 @@ label {
   margin: 18px 0 8px;
 }
 
-input {
+input,
+select {
   width: 100%;
   border: 1px solid #353b42;
   outline: none;
@@ -84,8 +85,40 @@ input {
   font-size: 17px;
 }
 
-input:focus {
+input:focus,
+select:focus {
   border-color: #1ed760;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, #8f979f 50%),
+    linear-gradient(135deg, #8f979f 50%, transparent 50%);
+
+  background-position:
+    calc(100% - 20px) 50%,
+    calc(100% - 14px) 50%;
+
+  background-size:
+    6px 6px,
+    6px 6px;
+
+  background-repeat: no-repeat;
+
+  padding-right: 42px;
+}
+
+.setupGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.setupGrid label {
+  margin-top: 18px;
 }
 
 button {
@@ -130,6 +163,24 @@ button:active {
   margin-top: 5px;
 }
 
+.rideDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.rideTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: #1b2025;
+  color: #c7cdd2;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .message {
   min-height: 22px;
   margin-top: 15px;
@@ -150,6 +201,13 @@ button:active {
   color: #687078;
   font-size: 12px;
   margin-top: 22px;
+}
+
+@media(max-width: 420px) {
+  .setupGrid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 </style>
 </head>
@@ -190,6 +248,60 @@ button:active {
     placeholder="e.g. Jessica"
   >
 
+  <div class="setupGrid">
+
+    <div>
+
+      <label for="rideApp">
+        Ride App
+      </label>
+
+      <select id="rideApp">
+        <option value="uber">
+          Uber
+        </option>
+
+        <option value="lyft">
+          Lyft
+        </option>
+
+        <option value="empower">
+          Empower
+        </option>
+
+        <option value="other">
+          Other
+        </option>
+      </select>
+
+    </div>
+
+    <div>
+
+      <label for="language">
+        Language
+      </label>
+
+      <select id="language">
+
+        <option value="en">
+          🇺🇸 English
+        </option>
+
+        <option value="es">
+          🇪🇸 Español
+        </option>
+
+        <option value="pt">
+          🇧🇷 Português
+        </option>
+
+      </select>
+
+    </div>
+
+  </div>
+
   <button
     class="start"
     onclick="startRide()"
@@ -198,6 +310,7 @@ button:active {
   </button>
 
   <div class="ride">
+
     <div class="status">
       CURRENT RIDE
     </div>
@@ -208,6 +321,25 @@ button:active {
     >
       No active ride
     </div>
+
+    <div
+      id="rideDetails"
+      class="rideDetails"
+      style="display:none"
+    >
+
+      <div
+        id="currentApp"
+        class="rideTag"
+      ></div>
+
+      <div
+        id="currentLanguage"
+        class="rideTag"
+      ></div>
+
+    </div>
+
   </div>
 
   <button
@@ -238,32 +370,91 @@ const nameInput =
     "passengerName"
   );
 
+const rideAppInput =
+  document.getElementById(
+    "rideApp"
+  );
+
+const languageInput =
+  document.getElementById(
+    "language"
+  );
+
 const passengerDisplay =
   document.getElementById(
     "currentPassenger"
   );
 
+const rideDetails =
+  document.getElementById(
+    "rideDetails"
+  );
+
+const currentApp =
+  document.getElementById(
+    "currentApp"
+  );
+
+const currentLanguage =
+  document.getElementById(
+    "currentLanguage"
+  );
+
 const message =
-  document.getElementById("message");
+  document.getElementById(
+    "message"
+  );
+
+
+/* ---------------------------------------
+   DISPLAY NAMES
+--------------------------------------- */
+
+const appNames = {
+  uber: "Uber",
+  lyft: "Lyft",
+  empower: "Empower",
+  other: "Other"
+};
+
+const languageNames = {
+  en: "🇺🇸 English",
+  es: "🇪🇸 Español",
+  pt: "🇧🇷 Português"
+};
+
+
+/* ---------------------------------------
+   MESSAGE
+--------------------------------------- */
 
 function showMessage(
   text,
   type = ""
 ) {
-  message.textContent = text;
+
+  message.textContent =
+    text;
 
   message.className =
     "message " + type;
 }
 
+
+/* ---------------------------------------
+   DRIVER REQUEST
+--------------------------------------- */
+
 async function driverRequest(
   url,
   options = {}
 ) {
+
   const pin =
     pinInput.value.trim();
 
   if (!pin) {
+
     throw new Error(
       "Enter your driver PIN."
     );
@@ -276,6 +467,7 @@ async function driverRequest(
         ...options,
 
         headers: {
+
           "X-Driver-Pin":
             pin,
 
@@ -287,11 +479,14 @@ async function driverRequest(
   let data = {};
 
   try {
+
     data =
       await response.json();
+
   } catch {}
 
   if (!response.ok) {
+
     throw new Error(
       data.error ||
       "Request failed."
@@ -301,10 +496,65 @@ async function driverRequest(
   return data;
 }
 
+
+/* ---------------------------------------
+   CURRENT RIDE DISPLAY
+--------------------------------------- */
+
+function displayRide(
+  ride
+) {
+
+  if (!ride || !ride.active) {
+
+    passengerDisplay.textContent =
+      "No active ride";
+
+    rideDetails.style.display =
+      "none";
+
+    return;
+  }
+
+  passengerDisplay.textContent =
+    ride.passengerName ||
+    "Passenger";
+
+  const app =
+    ride.rideApp ||
+    "other";
+
+  const language =
+    ride.language ||
+    "en";
+
+  currentApp.textContent =
+    appNames[app] ||
+    "Other";
+
+  currentLanguage.textContent =
+    languageNames[language] ||
+    "🇺🇸 English";
+
+  rideDetails.style.display =
+    "flex";
+}
+
+
+/* ---------------------------------------
+   START RIDE
+--------------------------------------- */
+
 async function startRide() {
 
   const passengerName =
     nameInput.value.trim();
+
+  const rideApp =
+    rideAppInput.value;
+
+  const language =
+    languageInput.value;
 
   if (!passengerName) {
 
@@ -331,15 +581,19 @@ async function startRide() {
 
           body:
             JSON.stringify({
-              passengerName
+              passengerName,
+              rideApp,
+              language
             })
         }
       );
 
-    passengerDisplay.textContent =
-      data.ride.passengerName;
+    displayRide(
+      data.ride
+    );
 
-    nameInput.value = "";
+    nameInput.value =
+      "";
 
     showMessage(
       "Ride started ✓",
@@ -355,6 +609,11 @@ async function startRide() {
   }
 }
 
+
+/* ---------------------------------------
+   END RIDE
+--------------------------------------- */
+
 async function endRide() {
 
   try {
@@ -366,8 +625,7 @@ async function endRide() {
       }
     );
 
-    passengerDisplay.textContent =
-      "No active ride";
+    displayRide(null);
 
     showMessage(
       "Ride ended ✓",
@@ -383,6 +641,11 @@ async function endRide() {
   }
 }
 
+
+/* ---------------------------------------
+   CHECK CURRENT RIDE
+--------------------------------------- */
+
 async function checkRide() {
 
   if (!pinInput.value.trim()) {
@@ -396,12 +659,12 @@ async function checkRide() {
         "/api/driver/ride"
       );
 
-    passengerDisplay.textContent =
-      data.active
-        ? data.passengerName
-        : "No active ride";
+    displayRide(
+      data
+    );
 
   } catch {
+
     /*
      * Don't repeatedly display errors
      * while the driver is entering PIN.
@@ -409,11 +672,13 @@ async function checkRide() {
   }
 }
 
+
 pinInput.addEventListener(
   "change",
   checkRide
 );
 
 </script>
+
 </body>
 </html>
