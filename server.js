@@ -475,6 +475,63 @@ app.post(
 
 
     /*
+     * Ride app.
+     */
+
+    const allowedRideApps = [
+      "uber",
+      "lyft",
+      "empower",
+      "other"
+    ];
+
+    let rideApp =
+      String(
+        req.body?.rideApp || "other"
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      !allowedRideApps.includes(
+        rideApp
+      )
+    ) {
+      rideApp = "other";
+    }
+
+
+    /*
+     * Passenger language.
+     *
+     * en = English
+     * es = Spanish
+     * pt = Portuguese
+     */
+
+    const allowedLanguages = [
+      "en",
+      "es",
+      "pt"
+    ];
+
+    let language =
+      String(
+        req.body?.language || "en"
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      !allowedLanguages.includes(
+        language
+      )
+    ) {
+      language = "en";
+    }
+
+
+    /*
      * Create a brand-new ride.
      */
 
@@ -482,6 +539,10 @@ app.post(
       active: true,
 
       passengerName,
+
+      rideApp,
+
+      language,
 
       rideId:
         crypto
@@ -517,13 +578,16 @@ app.post(
 
         passengerName,
 
+        rideApp,
+
+        language,
+
         rideId:
           currentRide.rideId
       }
     });
   }
 );
-
 
 /*
  * -------------------------------------------------------
