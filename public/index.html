@@ -1356,6 +1356,74 @@ function getSpeechVoice(language){
   const voices=
     window.speechSynthesis.getVoices();
 
+  /*
+   * Preferred Enhanced iPad voices:
+   * English    -> Evan
+   * Spanish    -> Carlos
+   * Portuguese -> Felipe
+   *
+   * WebKit may expose the voice name with or without
+   * the word "Enhanced", so match the person's name
+   * first while also checking the correct language.
+   */
+  const preferredVoices={
+    en:{
+      name:"evan",
+      languages:["en-US","en-"]
+    },
+    es:{
+      name:"carlos",
+      languages:["es-US","es-MX","es-ES","es-"]
+    },
+    pt:{
+      name:"felipe",
+      languages:["pt-BR","pt-PT","pt-"]
+    }
+  };
+
+  const preferred=
+    preferredVoices[language]||
+    preferredVoices.en;
+
+  const preferredVoice=
+    voices.find(v=>{
+      const voiceName=
+        String(v.name||"").toLowerCase();
+
+      const voiceLang=
+        String(v.lang||"").toLowerCase();
+
+      const correctName=
+        voiceName.includes(
+          preferred.name
+        );
+
+      const correctLanguage=
+        preferred.languages.some(
+          choice=>
+            choice.endsWith("-")
+              ?voiceLang.startsWith(
+                  choice.toLowerCase()
+                )
+              :voiceLang===
+                choice.toLowerCase()
+        );
+
+      return (
+        correctName &&
+        correctLanguage
+      );
+    });
+
+  if(preferredVoice){
+    return preferredVoice;
+  }
+
+  /*
+   * Fallback: if the chosen Enhanced voice is not
+   * available to Safari, use another installed voice
+   * in the correct language.
+   */
   const languageMap={
     en:["en-US","en-"],
     es:["es-US","es-MX","es-ES","es-"],
@@ -1363,19 +1431,38 @@ function getSpeechVoice(language){
   };
 
   const choices=
-    languageMap[language]||languageMap.en;
+    languageMap[language]||
+    languageMap.en;
 
   for(const choice of choices){
-    const exact=!choice.endsWith("-");
-    const voice=voices.find(v=>
-      exact
-        ?v.lang===choice
-        :v.lang.toLowerCase().startsWith(choice.toLowerCase())
-    );
-    if(voice) return voice;
+    const exact=
+      !choice.endsWith("-");
+
+    const voice=
+      voices.find(v=>
+        exact
+          ?String(v.lang||"").toLowerCase()===
+            choice.toLowerCase()
+          :String(v.lang||"").toLowerCase()
+            .startsWith(
+              choice.toLowerCase()
+            )
+      );
+
+    if(voice){
+      return voice;
+    }
   }
 
-  return voices.find(v=>v.lang.startsWith("en"))||null;
+  return (
+    voices.find(
+      v=>
+        String(v.lang||"")
+          .toLowerCase()
+          .startsWith("en")
+    )||
+    null
+  );
 }
 
 function rideAppName(rideApp){
