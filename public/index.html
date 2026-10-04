@@ -1201,6 +1201,9 @@ let playing=false;
 let currentRideId=null;
 let welcomedRideId=null;
 let welcomeTimeout=null;
+let currentRideLanguage="en";
+let currentRideApp="other";
+let arrivalAnnouncementRideId=null;
 
 let tripMap=null;
 let vehicleMarker=null;
@@ -1348,108 +1351,139 @@ function toggleWelcomeSound(){
   }
 }
 
-function speakPassengerWelcome(
-  passengerName
-){
+function getSpeechVoice(language){
 
-  if(!welcomeSoundEnabled){
-    return;
+  const voices=
+    window.speechSynthesis.getVoices();
+
+  const languageMap={
+    en:["en-US","en-"],
+    es:["es-US","es-MX","es-ES","es-"],
+    pt:["pt-BR","pt-PT","pt-"]
+  };
+
+  const choices=
+    languageMap[language]||languageMap.en;
+
+  for(const choice of choices){
+    const exact=!choice.endsWith("-");
+    const voice=voices.find(v=>
+      exact
+        ?v.lang===choice
+        :v.lang.toLowerCase().startsWith(choice.toLowerCase())
+    );
+    if(voice) return voice;
   }
 
-  if(
-    !(
-      "speechSynthesis"
-      in window
-    )
-  ){
-    return;
-  }
+  return voices.find(v=>v.lang.startsWith("en"))||null;
+}
+
+function rideAppName(rideApp){
+  return ({
+    uber:"Uber",
+    lyft:"Lyft",
+    empower:"Empower",
+    other:""
+  })[rideApp]||"";
+}
+
+function speakText(text,language){
+
+  if(!welcomeSoundEnabled) return false;
+  if(!("speechSynthesis" in window)) return false;
 
   try{
-
-    window
-      .speechSynthesis
-      .cancel();
-
-    const safeName=
-      String(
-        passengerName||""
-      ).trim();
-
-    const greeting=
-      safeName
-        ?`Welcome aboard, ${safeName}!`
-        :"Welcome aboard!";
-
-    const text=
-      `${greeting} `+
-      `We're glad to have you with us today. `+
-      `The screen in front of you is yours to enjoy. `+
-      `Feel free to choose your music, adjust the cabin temperature, `+
-      `and follow along with your trip. `+
-      `Sit back, relax, and enjoy the ride!`;
+    window.speechSynthesis.cancel();
 
     const speech=
-      new SpeechSynthesisUtterance(
-        text
-      );
+      new SpeechSynthesisUtterance(text);
 
-    speech.lang="en-US";
+    speech.lang=
+      language==="es"
+        ?"es-US"
+        :language==="pt"
+          ?"pt-BR"
+          :"en-US";
+
     speech.rate=.92;
     speech.pitch=1;
     speech.volume=1;
 
-    const voices=
-      window
-        .speechSynthesis
-        .getVoices();
+    const voice=getSpeechVoice(language);
+    if(voice) speech.voice=voice;
 
-    const preferredVoice=
-      voices.find(
-        voice=>
-          voice.lang==="en-US" &&
-          (
-            voice.name.includes(
-              "Siri"
-            ) ||
-            voice.name.includes(
-              "Samantha"
-            )
-          )
-      ) ||
-
-      voices.find(
-        voice=>
-          voice.lang==="en-US"
-      );
-
-    if(preferredVoice){
-      speech.voice=
-        preferredVoice;
-    }
-
-    setTimeout(()=>{
-
-      try{
-        window
-          .speechSynthesis
-          .speak(speech);
-      }catch(error){
-        console.log(
-          "Welcome speech unavailable:",
-          error.message
-        );
-      }
-
-    },700);
+    window.speechSynthesis.speak(speech);
+    return true;
 
   }catch(error){
-
-    console.log(
-      "Welcome speech unavailable:",
-      error.message
-    );
+    console.log("Speech unavailable:",error.message);
+    return false;
   }
+}
+
+function speakPassengerWelcome(passengerName,language="en",rideApp="other"){
+
+  if(!welcomeSoundEnabled) return;
+
+  const safeName=String(passengerName||"").trim();
+  const app=rideAppName(rideApp);
+  let text="";
+
+  if(language==="es"){
+    text=
+      `${safeName?`¡Hola, ${safeName}! `:"¡Hola! "}`+
+      `${app?`Bienvenido a tu viaje de ${app}. `:"Qué gusto tenerte a bordo. "}`+
+      `La pantalla frente a ti está a tu disposición. `+
+      `Puedes elegir tu música, ajustar la temperatura de la cabina y seguir el recorrido de tu viaje. `+
+      `Siéntate, relájate y disfruta del viaje.`;
+
+  }else if(language==="pt"){
+    text=
+      `${safeName?`Olá, ${safeName}! `:"Olá! "}`+
+      `${app?`Bem-vindo à sua viagem de ${app}. `:"É um prazer ter você a bordo. "}`+
+      `A tela à sua frente está à sua disposição. `+
+      `Você pode escolher sua música, ajustar a temperatura da cabine e acompanhar sua viagem. `+
+      `Sente-se, relaxe e aproveite a viagem.`;
+
+  }else{
+    text=
+      `${safeName?`Welcome aboard, ${safeName}! `:"Welcome aboard! "}`+
+      `${app?`Welcome to your ${app} ride. `:"We're glad to have you with us today. "}`+
+      `The screen in front of you is yours to enjoy. `+
+      `Feel free to choose your music, adjust the cabin temperature, and follow along with your trip. `+
+      `Sit back, relax, and enjoy the ride!`;
+  }
+
+  setTimeout(()=>speakText(text,language),700);
+}
+
+function speakArrivalThankYou(language="en"){
+
+  let text="";
+
+  if(language==="es"){
+    text=
+      `Ya casi llegamos a su destino. `+
+      `¡Gracias por viajar con nosotros hoy! `+
+      `Por favor, asegúrese de llevar todas sus pertenencias antes de salir del vehículo. `+
+      `Esperamos que haya disfrutado su viaje y le deseamos un excelente resto del día.`;
+
+  }else if(language==="pt"){
+    text=
+      `Estamos quase chegando ao seu destino. `+
+      `Agradecemos por viajar conosco hoje! `+
+      `Por favor, certifique-se de levar todos os seus pertences antes de sair do veículo. `+
+      `Esperamos que tenha aproveitado a viagem e desejamos a você um excelente resto do dia.`;
+
+  }else{
+    text=
+      `We're almost at your destination. `+
+      `Thank you for riding with us today! `+
+      `Please make sure you have all of your belongings before exiting the vehicle. `+
+      `We hope you enjoyed your ride, and we wish you a wonderful rest of your day!`;
+  }
+
+  return speakText(text,language);
 }
 
 /* --------------------------------------------------
@@ -1495,7 +1529,9 @@ function showWaitingScreen(){
 
 function showPassengerWelcome(
   passengerName,
-  rideId
+  rideId,
+  language="en",
+  rideApp="other"
 ){
 
   if(welcomeTimeout){
@@ -1523,8 +1559,15 @@ function showPassengerWelcome(
     .classList
     .remove("waitingTitle");
 
+  const welcomeWord=
+    language==="es"
+      ?"¡Hola,"
+      :language==="pt"
+        ?"Olá,"
+        :"Welcome,";
+
   welcomeTitle.innerHTML=
-    `<span class="welcomeScript">Welcome,</span>`+
+    `<span class="welcomeScript">${welcomeWord}</span>`+
     `<span class="welcomePassengerName"></span>`;
 
   welcomeTitle
@@ -1535,7 +1578,11 @@ function showPassengerWelcome(
       passengerName;
 
   welcomeMessage.textContent=
-    "Sit back, relax, and enjoy the ride. Choose your music, adjust your comfort, or follow your trip.";
+    language==="es"
+      ?"Siéntate, relájate y disfruta del viaje. Elige tu música, ajusta tu comodidad o sigue tu recorrido."
+      :language==="pt"
+        ?"Sente-se, relaxe e aproveite a viagem. Escolha sua música, ajuste seu conforto ou acompanhe sua viagem."
+        :"Sit back, relax, and enjoy the ride. Choose your music, adjust your comfort, or follow your trip.";
 
   welcomeFeatures.style.display=
     "flex";
@@ -1548,7 +1595,9 @@ function showPassengerWelcome(
       "none";
 
   speakPassengerWelcome(
-    passengerName
+    passengerName,
+    language,
+    rideApp
   );
 
   welcomeTimeout=
@@ -1585,6 +1634,9 @@ async function checkRide(){
 
       currentRideId=null;
       welcomedRideId=null;
+      currentRideLanguage="en";
+      currentRideApp="other";
+      arrivalAnnouncementRideId=null;
       tripBoundsSet=false;
 
       showWaitingScreen();
@@ -1592,8 +1644,20 @@ async function checkRide(){
       return;
     }
 
+    const previousRideId=currentRideId;
+
     currentRideId=
       ride.rideId;
+
+    currentRideLanguage=
+      ride.language||"en";
+
+    currentRideApp=
+      ride.rideApp||"other";
+
+    if(previousRideId!==currentRideId){
+      arrivalAnnouncementRideId=null;
+    }
 
     if(
       ride.rideId &&
@@ -1606,7 +1670,9 @@ async function checkRide(){
       showPassengerWelcome(
         ride.passengerName||
         "there",
-        ride.rideId
+        ride.rideId,
+        currentRideLanguage,
+        currentRideApp
       );
     }
 
@@ -2583,6 +2649,24 @@ async function loadTrip(){
       Number(
         data.minutesRemaining
       );
+
+    if(
+      Number.isFinite(minutes) &&
+      minutes>=0 &&
+      minutes<=1 &&
+      currentRideId &&
+      arrivalAnnouncementRideId!==currentRideId
+    ){
+      const spoken=
+        speakArrivalThankYou(
+          currentRideLanguage
+        );
+
+      if(spoken){
+        arrivalAnnouncementRideId=
+          currentRideId;
+      }
+    }
 
     document
       .getElementById(
