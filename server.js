@@ -389,6 +389,16 @@ app.get(
           ? currentRide.passengerName
           : "",
 
+      rideApp:
+        currentRide.active
+          ? currentRide.rideApp || "other"
+          : null,
+
+      language:
+        currentRide.active
+          ? currentRide.language || "en"
+          : null,
+
       rideId:
         currentRide.active
           ? currentRide.rideId
@@ -396,7 +406,6 @@ app.get(
     });
   }
 );
-
 
 /*
  * -------------------------------------------------------
