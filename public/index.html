@@ -782,6 +782,27 @@ button:active{
   }
 }
 
+
+/* Passenger Memory Match */
+.memoryOverlay{position:fixed;inset:0;z-index:910;background:rgba(4,7,9,.97);display:none;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.memoryOverlay.open{display:flex}
+.memoryCard{width:min(690px,100%);background:#171d21;border:1px solid #354039;border-radius:24px;padding:clamp(18px,3vw,30px)}
+.memoryHeader,.memoryStats,.memoryActions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.memoryHeader strong{font-size:25px;color:#1ed760}
+.memoryHeader button,.memoryActions button,.memoryDifficulty button{border:1px solid #465052;border-radius:12px;padding:11px 14px;background:#273137;color:white;font-weight:700}
+.memoryDifficulty{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.memoryDifficulty button.selected{background:#1ed760;color:#07140b;border-color:#1ed760}
+.memoryStats{color:#c4ced0;margin:14px 0}
+.memoryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.memoryGrid.hard{grid-template-columns:repeat(6,minmax(0,1fr))}
+.memoryTile{aspect-ratio:1;border:1px solid #42534a;border-radius:15px;background:#26332d;color:#1ed760;font-size:clamp(23px,4vw,43px);font-weight:800;display:grid;place-items:center;touch-action:manipulation}
+.memoryTile.revealed,.memoryTile.matched{background:#d8f6e2;color:#07140b}
+.memoryTile.matched{border:3px solid #1ed760;opacity:.75}
+.memoryTile:disabled{cursor:default}
+.memoryActions{margin-top:18px}
+.memoryActions button{background:#1ed760;color:#07140b;border:0}
+@media(max-width:550px){.memoryGrid.hard{grid-template-columns:repeat(4,minmax(0,1fr))}.memoryTile{border-radius:10px}}
+
 </style>
 </head>
 
@@ -869,6 +890,7 @@ button:active{
     Connected to Tesla
   </div>
   <button class="triviaLaunch" onclick="openTrivia()">🧠 Trivia</button>
+  <button class="triviaLaunch" onclick="openMemory()">🃏 Memory Match</button>
 
 </header>
 
@@ -1112,6 +1134,23 @@ button:active{
 
 </div>
 
+
+
+<div id="memoryOverlay" class="memoryOverlay" role="dialog" aria-modal="true" aria-label="Memory Match" aria-hidden="true">
+  <div class="memoryCard">
+    <div class="memoryHeader"><strong>🃏 Memory Match</strong><button onclick="closeMemory()">✕ Back to ride</button></div>
+    <p style="color:#b6c1c5">Find the matching pairs. Take your time and enjoy the ride!</p>
+    <div class="memoryDifficulty">
+      <button data-pairs="6" onclick="startMemory(6)">Easy · 6 pairs</button>
+      <button data-pairs="8" onclick="startMemory(8)">Medium · 8 pairs</button>
+      <button data-pairs="12" onclick="startMemory(12)">Hard · 12 pairs</button>
+    </div>
+    <div class="memoryStats"><span id="memoryMoves">Moves: 0</span><span id="memoryPairs">Matches: 0 / 6</span></div>
+    <div id="memoryGrid" class="memoryGrid"></div>
+    <div id="memoryResult" role="status" style="margin-top:14px;color:#1ed760;font-weight:750"></div>
+    <div class="memoryActions"><button onclick="startMemory(memoryPairCount)">↻ Play again</button></div>
+  </div>
+</div>
 
 <!-- Trivia is a local browser game; music and trip polling continue underneath. -->
 <div id="triviaOverlay" class="triviaOverlay" role="dialog" aria-modal="true" aria-label="Passenger trivia">
@@ -2895,6 +2934,49 @@ function answerTrivia(choice){if(triviaAnswered)return;triviaAnswered=true;const
  document.getElementById("triviaScore").textContent="Score: "+triviaPoints+" / 10";document.getElementById("triviaNext").hidden=false;
 }
 function nextTrivia(){if(triviaIndex>=triviaRound.length){startTrivia();return;}if(!triviaAnswered)return;triviaIndex++;renderTrivia();}
+
+
+/* Memory Match stays entirely in the browser; no Tesla API requests. */
+const memoryIcons=["🚗","🌴","🍕","🐶","🎵","🌎","🚀","⭐","🍓","🦋","🏖️","🎮"];
+let memoryPairCount=6,memoryDeck=[],memoryFlipped=[],memoryMatched=0,memoryMoves=0,memoryLocked=false,memoryTimer=null;
+function openMemory(){document.getElementById("memoryOverlay").classList.add("open");document.getElementById("memoryOverlay").setAttribute("aria-hidden","false");startMemory(memoryPairCount);}
+function closeMemory(){clearTimeout(memoryTimer);memoryTimer=null;memoryLocked=false;document.getElementById("memoryOverlay").classList.remove("open");document.getElementById("memoryOverlay").setAttribute("aria-hidden","true");}
+function startMemory(pairs=6){
+  clearTimeout(memoryTimer);memoryTimer=null;memoryPairCount=pairs;memoryFlipped=[];memoryMatched=0;memoryMoves=0;memoryLocked=false;
+  const values=memoryIcons.slice(0,pairs);memoryDeck=[...values,...values].map((icon,id)=>({icon,id,matched:false}));
+  for(let i=memoryDeck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[memoryDeck[i],memoryDeck[j]]=[memoryDeck[j],memoryDeck[i]];}
+  document.querySelectorAll(".memoryDifficulty button").forEach(b=>b.classList.toggle("selected",Number(b.dataset.pairs)===pairs));
+  document.getElementById("memoryResult").textContent="";
+  renderMemory();
+}
+function renderMemory(){
+  const grid=document.getElementById("memoryGrid");grid.classList.toggle("hard",memoryPairCount===12);grid.replaceChildren();
+  memoryDeck.forEach((card,index)=>{
+    const revealed=card.matched||memoryFlipped.includes(index);
+    const button=document.createElement("button");button.className="memoryTile"+(card.matched?" matched":revealed?" revealed":"");
+    button.textContent=revealed?card.icon:"?";
+    button.setAttribute("aria-label",revealed?card.icon:"Hidden card "+(index+1));
+    button.disabled=card.matched||memoryFlipped.includes(index)||memoryLocked;
+    button.onclick=()=>flipMemory(index);grid.appendChild(button);
+  });
+  document.getElementById("memoryMoves").textContent="Moves: "+memoryMoves;
+  document.getElementById("memoryPairs").textContent="Matches: "+memoryMatched+" / "+memoryPairCount;
+}
+function flipMemory(index){
+  if(memoryLocked||memoryFlipped.includes(index)||memoryDeck[index].matched)return;
+  memoryFlipped.push(index);
+  if(memoryFlipped.length===2){
+    memoryMoves++;const [a,b]=memoryFlipped;
+    if(memoryDeck[a].icon===memoryDeck[b].icon){
+      memoryDeck[a].matched=true;memoryDeck[b].matched=true;memoryMatched++;memoryFlipped=[];
+      if(memoryMatched===memoryPairCount)document.getElementById("memoryResult").textContent="🎉 You found all "+memoryPairCount+" pairs in "+memoryMoves+" moves!";
+    }else{
+      memoryLocked=true;
+      memoryTimer=setTimeout(()=>{memoryFlipped=[];memoryLocked=false;memoryTimer=null;renderMemory();},900);
+    }
+  }
+  renderMemory();
+}
 
 /* --------------------------------------------------
    TIMERS
