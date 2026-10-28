@@ -827,6 +827,33 @@ button:active{
 .referralFeedback strong{color:#1ed760}
 @media(max-width:900px){.passengerBottomLayout{grid-template-columns:minmax(0,1fr) 220px}.passengerBottomControls .climateDivider{width:80%;height:1px}}
 @media(max-width:680px){.passengerBottomLayout{grid-template-columns:1fr}.referralSide{flex-direction:row;flex-wrap:wrap}.referralGraphic{width:160px}.referralFeedback{flex:1;min-width:180px}}
+
+/* Approved three-column dashboard: trip / music and controls / referral */
+.approvedDashboard{display:grid;grid-template-columns:minmax(250px,.85fr) minmax(410px,1.65fr) minmax(210px,.72fr);gap:18px;align-items:stretch}
+.approvedTrip,.approvedCenter,.approvedRight{min-width:0}
+.approvedTrip .tripPanel{height:100%;min-height:660px}
+.approvedTrip .tripActive{height:100%}
+.approvedCenter{display:flex;flex-direction:column;gap:18px}
+.approvedCenter>.panel{flex:1}
+.approvedCenter .musicTop{grid-template-columns:minmax(120px,165px) minmax(0,1fr);gap:18px}
+.approvedCenter .artwork{width:100%;height:auto;aspect-ratio:1}
+.approvedCenter .title{font-size:clamp(24px,2.6vw,38px)}
+.approvedControls{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(180px,.85fr);gap:14px}
+.approvedControls .climate{margin:0;flex-direction:column;justify-content:center;gap:13px;padding:16px}
+.approvedControls .climateGroup{justify-content:center;flex-wrap:wrap;gap:10px}
+.approvedControls .climateDivider{height:1px;width:90%}
+.approvedControls .gamesFooter{margin:0;flex-direction:column;align-items:stretch;justify-content:center;padding:16px;gap:10px}
+.approvedControls .gamesFooterLabel{text-align:center;margin:0}
+.approvedControls .triviaLaunch{width:100%}
+.approvedControls .temperature{font-size:27px;min-width:70px}
+.approvedControls .tempControls{gap:8px}
+.approvedControls .tempBtn{width:40px;height:40px}
+.approvedRight .referralSide{height:100%;justify-content:flex-start;padding:16px;gap:18px}
+.approvedRight .referralGraphic{width:100%;max-width:245px}
+.approvedRight .referralFeedback{font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.12);padding-top:18px}
+@media(max-width:1150px){.approvedDashboard{grid-template-columns:minmax(215px,.85fr) minmax(350px,1.5fr) minmax(180px,.65fr);gap:12px}.approvedControls{grid-template-columns:1fr 1fr}.approvedRight .referralFeedback{font-size:14px}.approvedTrip .tripPanel{min-height:590px}}
+@media(max-width:900px){.approvedDashboard{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}.approvedRight{grid-column:1/-1}.approvedRight .referralSide{flex-direction:row;align-items:center;justify-content:center}.approvedRight .referralGraphic{width:170px}.approvedRight .referralFeedback{border-top:0;border-left:1px solid rgba(255,255,255,.12);padding:12px 0 12px 18px}.approvedControls{grid-template-columns:1fr}.approvedTrip .tripPanel{min-height:530px}}
+@media(max-width:620px){.approvedDashboard{grid-template-columns:1fr}.approvedTrip{order:1}.approvedCenter{order:0}.approvedRight{order:2}.approvedControls{grid-template-columns:1fr}.approvedCenter .musicTop{grid-template-columns:120px minmax(0,1fr)}.approvedTrip .tripPanel{min-height:440px}}
 </style>
 </head>
 
@@ -916,9 +943,91 @@ button:active{
 
 </header>
 
-<div class="dashboard">
+<div class="approvedDashboard">
+  <div class="approvedTrip"><!-- TRIP -->
 
-<!-- MUSIC -->
+<section class="panel tripPanel">
+
+  <div id="tripActive" class="hidden">
+
+    <div class="tripHeader">
+
+      <div class="eyebrow">
+        Your Trip
+      </div>
+
+      <h1 id="tripDestination" class="tripDestination">
+        Destination
+      </h1>
+
+    </div>
+
+    <div class="tripStats">
+
+      <div class="tripStat">
+        <div class="tripStatLabel">
+          Time Remaining
+        </div>
+        <div id="tripTime" class="tripStatValue">
+          --
+        </div>
+      </div>
+
+      <div class="tripStat">
+        <div class="tripStatLabel">
+          Distance
+        </div>
+        <div id="tripDistance" class="tripStatValue">
+          --
+        </div>
+      </div>
+
+      <div class="tripStat">
+        <div class="tripStatLabel">
+          Traffic Delay
+        </div>
+        <div id="tripTraffic" class="tripStatValue">
+          --
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mapShell">
+      <div id="tripMap"></div>
+
+      <div class="mapBadge">
+        🚘 Live vehicle location
+      </div>
+    </div>
+
+  </div>
+
+  <div id="tripEmpty" class="tripEmpty">
+
+    <div>
+
+      <div class="tripEmptyIcon">
+        🗺️
+      </div>
+
+      <div class="tripEmptyTitle">
+        Enjoy the ride
+      </div>
+
+      <div class="tripEmptyText">
+        Your destination, ETA and live trip
+        information will appear here when
+        navigation is active.
+      </div>
+
+    </div>
+
+  </div>
+
+</section></div>
+  <div class="approvedCenter">
+    <!-- MUSIC -->
 
 <section class="panel">
 
@@ -1070,124 +1179,7 @@ button:active{
   </div>
 
 </section>
-
-<!-- TRIP -->
-
-<section class="panel tripPanel">
-
-  <div id="tripActive" class="hidden">
-
-    <div class="tripHeader">
-
-      <div class="eyebrow">
-        Your Trip
-      </div>
-
-      <h1 id="tripDestination" class="tripDestination">
-        Destination
-      </h1>
-
-    </div>
-
-    <div class="tripStats">
-
-      <div class="tripStat">
-        <div class="tripStatLabel">
-          Time Remaining
-        </div>
-        <div id="tripTime" class="tripStatValue">
-          --
-        </div>
-      </div>
-
-      <div class="tripStat">
-        <div class="tripStatLabel">
-          Distance
-        </div>
-        <div id="tripDistance" class="tripStatValue">
-          --
-        </div>
-      </div>
-
-      <div class="tripStat">
-        <div class="tripStatLabel">
-          Traffic Delay
-        </div>
-        <div id="tripTraffic" class="tripStatValue">
-          --
-        </div>
-      </div>
-
-    </div>
-
-    <div class="mapShell">
-      <div id="tripMap"></div>
-
-      <div class="mapBadge">
-        🚘 Live vehicle location
-      </div>
-    </div>
-
-  </div>
-
-  <div id="tripEmpty" class="tripEmpty">
-
-    <div>
-
-      <div class="tripEmptyIcon">
-        🗺️
-      </div>
-
-      <div class="tripEmptyTitle">
-        Enjoy the ride
-      </div>
-
-      <div class="tripEmptyText">
-        Your destination, ETA and live trip
-        information will appear here when
-        navigation is active.
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-</div>
-
-
-
-<div id="memoryOverlay" class="memoryOverlay" role="dialog" aria-modal="true" aria-label="Memory Match" aria-hidden="true">
-  <div class="memoryCard">
-    <div class="memoryHeader"><strong>🃏 Memory Match</strong><button onclick="closeMemory()">✕ Back to ride</button></div>
-    <p style="color:#b6c1c5">Find the matching pairs. Take your time and enjoy the ride!</p>
-    <div class="memoryDifficulty">
-      <button data-pairs="6" onclick="startMemory(6)">Easy · 6 pairs</button>
-      <button data-pairs="8" onclick="startMemory(8)">Medium · 8 pairs</button>
-      <button data-pairs="12" onclick="startMemory(12)">Hard · 12 pairs</button>
-    </div>
-    <div class="memoryStats"><span id="memoryMoves">Moves: 0</span><span id="memoryPairs">Matches: 0 / 6</span></div>
-    <div id="memoryGrid" class="memoryGrid"></div>
-    <div id="memoryResult" role="status" style="margin-top:14px;color:#1ed760;font-weight:750"></div>
-    <div class="memoryActions"><button onclick="startMemory(memoryPairCount)">↻ Play again</button></div>
-  </div>
-</div>
-
-<!-- Trivia is a local browser game; music and trip polling continue underneath. -->
-<div id="triviaOverlay" class="triviaOverlay" role="dialog" aria-modal="true" aria-label="Passenger trivia">
-  <div class="triviaCard">
-    <div class="triviaHead"><strong>🧠 Ride Trivia</strong><button class="triviaClose" onclick="closeTrivia()">✕ Back to ride</button></div>
-    <div id="triviaProgress" class="eyebrow"></div>
-    <div id="triviaQuestion" class="triviaQuestion"></div>
-    <div id="triviaOptions" class="triviaOptions"></div>
-    <div class="triviaFooter"><span id="triviaScore"></span><button id="triviaNext" class="triviaNext" onclick="nextTrivia()" hidden>Next →</button></div>
-  </div>
-</div>
-
-<div class="passengerBottomLayout">
-  <div class="passengerBottomControls">
-<!-- VOLUME + CLIMATE -->
+    <div class="approvedControls"><!-- VOLUME + CLIMATE -->
 
 <section class="climate">
 
@@ -1276,11 +1268,43 @@ button:active{
   <button class="triviaLaunch" onclick="openMemory()">🃏 Memory Match</button>
 </section>
 
+</div>
   </div>
-<aside class="referralSide" aria-label="Empower referral and ride feedback">
+  <div class="approvedRight"><aside class="referralSide" aria-label="Empower referral and ride feedback">
   <img class="referralGraphic" src="https://raw.githubusercontent.com/evega380-cyber/Tesla-Pax-Control/main/Black%20Red%20Modern%20Youtube%20Profile%20Picture.png" alt="Empower referral QR code 7QDP4G" loading="lazy">
   <div class="referralFeedback">If you enjoyed this ride, don't forget to hit the <strong>👍 thumbs up</strong> and make me one of your <strong>favorite drivers.</strong></div>
-</aside>
+</aside></div>
+</div>
+
+
+
+
+
+<div id="memoryOverlay" class="memoryOverlay" role="dialog" aria-modal="true" aria-label="Memory Match" aria-hidden="true">
+  <div class="memoryCard">
+    <div class="memoryHeader"><strong>🃏 Memory Match</strong><button onclick="closeMemory()">✕ Back to ride</button></div>
+    <p style="color:#b6c1c5">Find the matching pairs. Take your time and enjoy the ride!</p>
+    <div class="memoryDifficulty">
+      <button data-pairs="6" onclick="startMemory(6)">Easy · 6 pairs</button>
+      <button data-pairs="8" onclick="startMemory(8)">Medium · 8 pairs</button>
+      <button data-pairs="12" onclick="startMemory(12)">Hard · 12 pairs</button>
+    </div>
+    <div class="memoryStats"><span id="memoryMoves">Moves: 0</span><span id="memoryPairs">Matches: 0 / 6</span></div>
+    <div id="memoryGrid" class="memoryGrid"></div>
+    <div id="memoryResult" role="status" style="margin-top:14px;color:#1ed760;font-weight:750"></div>
+    <div class="memoryActions"><button onclick="startMemory(memoryPairCount)">↻ Play again</button></div>
+  </div>
+</div>
+
+<!-- Trivia is a local browser game; music and trip polling continue underneath. -->
+<div id="triviaOverlay" class="triviaOverlay" role="dialog" aria-modal="true" aria-label="Passenger trivia">
+  <div class="triviaCard">
+    <div class="triviaHead"><strong>🧠 Ride Trivia</strong><button class="triviaClose" onclick="closeTrivia()">✕ Back to ride</button></div>
+    <div id="triviaProgress" class="eyebrow"></div>
+    <div id="triviaQuestion" class="triviaQuestion"></div>
+    <div id="triviaOptions" class="triviaOptions"></div>
+    <div class="triviaFooter"><span id="triviaScore"></span><button id="triviaNext" class="triviaNext" onclick="nextTrivia()" hidden>Next →</button></div>
+  </div>
 </div>
 
 <div id="message" class="message"></div>
