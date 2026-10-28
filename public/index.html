@@ -854,6 +854,39 @@ button:active{
 @media(max-width:1150px){.approvedDashboard{grid-template-columns:minmax(215px,.85fr) minmax(350px,1.5fr) minmax(180px,.65fr);gap:12px}.approvedControls{grid-template-columns:1fr 1fr}.approvedRight .referralFeedback{font-size:14px}.approvedTrip .tripPanel{min-height:590px}}
 @media(max-width:900px){.approvedDashboard{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}.approvedRight{grid-column:1/-1}.approvedRight .referralSide{flex-direction:row;align-items:center;justify-content:center}.approvedRight .referralGraphic{width:170px}.approvedRight .referralFeedback{border-top:0;border-left:1px solid rgba(255,255,255,.12);padding:12px 0 12px 18px}.approvedControls{grid-template-columns:1fr}.approvedTrip .tripPanel{min-height:530px}}
 @media(max-width:620px){.approvedDashboard{grid-template-columns:1fr}.approvedTrip{order:1}.approvedCenter{order:0}.approvedRight{order:2}.approvedControls{grid-template-columns:1fr}.approvedCenter .musicTop{grid-template-columns:120px minmax(0,1fr)}.approvedTrip .tripPanel{min-height:440px}}
+
+/* iPad landscape refinements: maximize useful map area and touch targets */
+.approvedTrip .tripPanel{display:flex;flex-direction:column}
+.approvedTrip #tripActive:not(.hidden){display:flex;flex-direction:column;flex:1;min-height:0}
+.approvedTrip .mapShell{flex:1 1 auto;min-height:350px}
+.approvedTrip .tripStats{gap:7px}
+.approvedTrip .tripStat{padding:10px 8px}
+.approvedTrip .tripStatValue{font-size:clamp(17px,1.8vw,23px)}
+.approvedCenter>.panel{flex:0 0 auto}
+.approvedCenter{gap:12px}
+.approvedCenter .musicTop{grid-template-columns:minmax(100px,135px) minmax(0,1fr);gap:14px}
+.approvedCenter .media{margin:12px 0}
+.approvedCenter .vibeSection{margin-top:12px}
+.approvedCenter .vibeTitle{margin-bottom:8px}
+.approvedCenter .vibeButtons{gap:7px}
+.approvedCenter .vibeButtons button{padding:10px 12px;min-height:42px}
+.approvedControls .smallBtn,.approvedControls .tempBtn{min-width:48px;min-height:48px}
+.approvedControls .triviaLaunch{min-height:52px;font-size:15px}
+.approvedControls .setTemp{min-height:48px}
+.approvedControls .climate,.approvedControls .gamesFooter{padding:14px}
+.approvedRight .referralSide{justify-content:center}
+.approvedRight .referralGraphic{max-width:230px}
+.approvedRight .referralFeedback{font-size:clamp(14px,1.35vw,17px);line-height:1.5}
+@media(max-width:1150px) and (min-width:901px){
+ .approvedTrip .mapShell{min-height:360px}
+ .approvedControls{grid-template-columns:minmax(0,1.15fr) minmax(150px,.85fr)}
+ .approvedCenter .musicTop{grid-template-columns:115px minmax(0,1fr)}
+ .approvedCenter .vibeButtons button{font-size:12px}
+}
+@media(max-width:900px){
+ .approvedTrip .mapShell{min-height:320px}
+ .approvedControls{grid-template-columns:1fr}
+}
 </style>
 </head>
 
