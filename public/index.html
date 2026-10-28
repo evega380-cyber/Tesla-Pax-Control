@@ -736,6 +736,23 @@ button:active{
   color:#ff7373;
 }
 
+
+/* Passenger trivia: self-contained, no API calls */
+.triviaLaunch{border:1px solid rgba(30,215,96,.45);border-radius:14px;padding:11px 18px;background:rgba(30,215,96,.15);color:#fff;font-weight:800}
+.triviaOverlay{position:fixed;inset:0;z-index:900;background:rgba(4,7,9,.96);display:none;align-items:center;justify-content:center;padding:22px;overflow:auto}
+.triviaOverlay.open{display:flex}
+.triviaCard{width:min(650px,100%);background:#171d21;border:1px solid #354039;border-radius:24px;padding:clamp(20px,4vw,38px);box-shadow:0 24px 80px #0009}
+.triviaHead{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}
+.triviaHead strong{font-size:25px;color:#1ed760}
+.triviaClose{border:0;border-radius:12px;background:#323b40;color:white;padding:10px 15px}
+.triviaQuestion{font-size:clamp(23px,3vw,32px);font-weight:750;margin:16px 0 22px;line-height:1.25}
+.triviaOptions{display:grid;gap:11px}
+.triviaOption{border:1px solid #465052;background:#242d31;color:#fff;border-radius:14px;padding:16px;text-align:left;font-size:18px}
+.triviaOption.correct{background:#175b35;border-color:#1ed760}.triviaOption.wrong{background:#672b30;border-color:#ff8585}
+.triviaOption:disabled{opacity:1;cursor:default}
+.triviaFooter{margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#b6c1c5}
+.triviaNext{border:0;border-radius:13px;background:#1ed760;color:#07140b;padding:13px 19px;font-weight:800}
+
 /* --------------------------------------------------
    RESPONSIVE
 -------------------------------------------------- */
@@ -851,6 +868,7 @@ button:active{
     <span class="dot"></span>
     Connected to Tesla
   </div>
+  <button class="triviaLaunch" onclick="openTrivia()">🧠 Trivia</button>
 
 </header>
 
@@ -1092,6 +1110,18 @@ button:active{
 
 </section>
 
+</div>
+
+
+<!-- Trivia is a local browser game; music and trip polling continue underneath. -->
+<div id="triviaOverlay" class="triviaOverlay" role="dialog" aria-modal="true" aria-label="Passenger trivia">
+  <div class="triviaCard">
+    <div class="triviaHead"><strong>🧠 Ride Trivia</strong><button class="triviaClose" onclick="closeTrivia()">✕ Back to ride</button></div>
+    <div id="triviaProgress" class="eyebrow"></div>
+    <div id="triviaQuestion" class="triviaQuestion"></div>
+    <div id="triviaOptions" class="triviaOptions"></div>
+    <div class="triviaFooter"><span id="triviaScore"></span><button id="triviaNext" class="triviaNext" onclick="nextTrivia()" hidden>Next →</button></div>
+  </div>
 </div>
 
 <!-- VOLUME + CLIMATE -->
@@ -1719,6 +1749,7 @@ async function checkRide(){
 
     if(!ride.active){
 
+      if(currentRideId) closeTrivia();
       currentRideId=null;
       welcomedRideId=null;
       currentRideLanguage="en";
@@ -1743,6 +1774,7 @@ async function checkRide(){
       ride.rideApp||"other";
 
     if(previousRideId!==currentRideId){
+      closeTrivia();
       arrivalAnnouncementRideId=null;
     }
 
@@ -2825,6 +2857,44 @@ async function loadTrip(){
     );
   }
 }
+
+
+/* Offline trivia: ten randomized questions per round. */
+const triviaBank=[
+{q:"Which planet is known as the Red Planet?",a:["Mars","Venus","Jupiter","Mercury"],c:0},
+{q:"How many sides does a hexagon have?",a:["Five","Six","Seven","Eight"],c:1},
+{q:"Which ocean is the largest?",a:["Atlantic","Indian","Pacific","Arctic"],c:2},
+{q:"What is the capital of Japan?",a:["Kyoto","Seoul","Tokyo","Osaka"],c:2},
+{q:"Which instrument has 88 keys?",a:["Guitar","Piano","Violin","Trumpet"],c:1},
+{q:"What gas do plants absorb during photosynthesis?",a:["Oxygen","Nitrogen","Carbon dioxide","Helium"],c:2},
+{q:"Which animal is the fastest on land?",a:["Cheetah","Lion","Horse","Gazelle"],c:0},
+{q:"How many players are on the field for one soccer team?",a:["Nine","Ten","Eleven","Twelve"],c:2},
+{q:"What is the smallest prime number?",a:["Zero","One","Two","Three"],c:2},
+{q:"Which continent is Brazil in?",a:["Africa","South America","Europe","Asia"],c:1},
+{q:"What color do blue and yellow paint make?",a:["Purple","Orange","Green","Red"],c:2},
+{q:"Who painted the Mona Lisa?",a:["Van Gogh","Picasso","Leonardo da Vinci","Michelangelo"],c:2},
+{q:"Which is the largest mammal?",a:["Elephant","Blue whale","Giraffe","Hippopotamus"],c:1},
+{q:"What is the main language spoken in Brazil?",a:["Spanish","Portuguese","French","English"],c:1},
+{q:"Which shape has three sides?",a:["Square","Triangle","Pentagon","Circle"],c:1},
+{q:"What is H₂O commonly called?",a:["Salt","Water","Oxygen","Hydrogen"],c:1}
+];
+let triviaRound=[],triviaIndex=0,triviaPoints=0,triviaAnswered=false;
+function openTrivia(){if(!currentRideId)return;document.getElementById("triviaOverlay").classList.add("open");startTrivia();}
+function closeTrivia(){document.getElementById("triviaOverlay").classList.remove("open");}
+function startTrivia(){triviaRound=[...triviaBank].sort(()=>Math.random()-.5).slice(0,10);triviaIndex=0;triviaPoints=0;renderTrivia();}
+function renderTrivia(){
+ const q=triviaRound[triviaIndex],progress=document.getElementById("triviaProgress"),title=document.getElementById("triviaQuestion"),options=document.getElementById("triviaOptions"),next=document.getElementById("triviaNext");
+ options.replaceChildren();triviaAnswered=false;next.hidden=true;
+ document.getElementById("triviaScore").textContent="Score: "+triviaPoints+" / 10";
+ if(!q){progress.textContent="Round complete";title.textContent="You scored "+triviaPoints+" out of 10!";next.textContent="Play again ↻";next.hidden=false;return;}
+ progress.textContent="Question "+(triviaIndex+1)+" of 10";title.textContent=q.q;next.textContent=triviaIndex===9?"See results →":"Next →";
+ q.a.forEach((answer,i)=>{const b=document.createElement("button");b.className="triviaOption";b.textContent=answer;b.onclick=()=>answerTrivia(i);options.appendChild(b);});
+}
+function answerTrivia(choice){if(triviaAnswered)return;triviaAnswered=true;const q=triviaRound[triviaIndex];if(choice===q.c)triviaPoints++;
+ [...document.getElementById("triviaOptions").children].forEach((b,i)=>{b.disabled=true;if(i===q.c)b.classList.add("correct");else if(i===choice)b.classList.add("wrong");});
+ document.getElementById("triviaScore").textContent="Score: "+triviaPoints+" / 10";document.getElementById("triviaNext").hidden=false;
+}
+function nextTrivia(){if(triviaIndex>=triviaRound.length){startTrivia();return;}if(!triviaAnswered)return;triviaIndex++;renderTrivia();}
 
 /* --------------------------------------------------
    TIMERS
