@@ -5,6 +5,7 @@ import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 import https from "https";
+import { createDriverGpsRouter } from "./src/driver-gps.js";
 
 const app = express();
 
@@ -186,6 +187,21 @@ function requirePassenger(
 
   next();
 }
+/*
+ * -------------------------------------------------------
+ * IPHONE GPS COMPANION (DEVELOPMENT)
+ * -------------------------------------------------------
+ * Driver writes require a separate bearer token.
+ * Passenger reads require the existing passenger cookie.
+ */
+const gpsRouter = createDriverGpsRouter();
+app.use("/api/gps", (req, res, next) => {
+  if (req.path === "/passenger/location") {
+    return requirePassenger(req, res, next);
+  }
+  next();
+}, gpsRouter);
+
 /*
  * -------------------------------------------------------
  * DRIVER + CURRENT RIDE
