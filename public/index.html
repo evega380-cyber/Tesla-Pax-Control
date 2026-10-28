@@ -755,6 +755,13 @@ button:active{
 .triviaFooter{margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#b6c1c5}
 .triviaNext{border:0;border-radius:13px;background:#1ed760;color:#07140b;padding:13px 19px;font-weight:800}
 
+.empowerReferral{margin-top:16px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px;background:rgba(255,255,255,.045);border:1px solid rgba(30,215,96,.22);border-radius:24px}
+.empowerReferralTitle{font-size:22px;font-weight:800;color:#1ed760;margin-bottom:8px}
+.empowerReferralText{font-size:15px;color:#c4cbd0;line-height:1.5;max-width:540px}
+.empowerReferralCode{margin-top:12px;font-size:15px;color:#fff}
+.empowerReferralQR{width:150px;height:150px;object-fit:contain;border-radius:12px;background:#fff;padding:7px;flex-shrink:0}
+@media(max-width:600px){.empowerReferral{flex-direction:column;text-align:center}.empowerReferralQR{width:180px;height:180px}}
+
 /* --------------------------------------------------
    RESPONSIVE
 -------------------------------------------------- */
@@ -1250,6 +1257,16 @@ button:active{
 <section class="gamesFooter" aria-label="Passenger games"><span class="gamesFooterLabel">🎮 Games</span>
   <button class="triviaLaunch" onclick="openTrivia()">🧠 Trivia</button>
   <button class="triviaLaunch" onclick="openMemory()">🃏 Memory Match</button>
+</section>
+
+<!-- EMPOWER PASSENGER REFERRAL -->
+<section id="empowerReferral" class="empowerReferral" aria-label="Empower referral">
+  <div class="empowerReferralCopy">
+    <div class="empowerReferralTitle">Ride with Empower</div>
+    <div class="empowerReferralText">Interested in another way to book a ride? Scan this QR code with your phone.</div>
+    <div class="empowerReferralCode">Referral code: <strong>7QDP4G</strong></div>
+  </div>
+  <img class="empowerReferralQR" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&amp;margin=12&amp;data=https%3A%2F%2Fwww.canvaqr.com%2FRGSoagGPN_" alt="Scan to open Empower referral link" loading="lazy">
 </section>
 
 <div id="message" class="message"></div>
