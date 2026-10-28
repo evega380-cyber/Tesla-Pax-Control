@@ -738,6 +738,8 @@ button:active{
 
 
 /* Passenger trivia: self-contained, no API calls */
+.gamesFooter{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;padding:14px 18px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(255,255,255,.045)}
+.gamesFooterLabel{font-weight:800;color:#1ed760;margin-right:8px}
 .triviaLaunch{border:1px solid rgba(30,215,96,.45);border-radius:14px;padding:11px 18px;background:rgba(30,215,96,.15);color:#fff;font-weight:800}
 .triviaOverlay{position:fixed;inset:0;z-index:900;background:rgba(4,7,9,.96);display:none;align-items:center;justify-content:center;padding:22px;overflow:auto}
 .triviaOverlay.open{display:flex}
@@ -889,8 +891,6 @@ button:active{
     <span class="dot"></span>
     Connected to Tesla
   </div>
-  <button class="triviaLaunch" onclick="openTrivia()">🧠 Trivia</button>
-  <button class="triviaLaunch" onclick="openMemory()">🃏 Memory Match</button>
 
 </header>
 
@@ -1244,6 +1244,12 @@ button:active{
 
   </div>
 
+</section>
+
+<!-- GAMES AT BOTTOM -->
+<section class="gamesFooter" aria-label="Passenger games"><span class="gamesFooterLabel">🎮 Games</span>
+  <button class="triviaLaunch" onclick="openTrivia()">🧠 Trivia</button>
+  <button class="triviaLaunch" onclick="openMemory()">🃏 Memory Match</button>
 </section>
 
 <div id="message" class="message"></div>
