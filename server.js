@@ -2346,6 +2346,54 @@ async function sendTeslaCommand(
 }
 
 /*
+ * Auto-end the passenger session after arrival.
+ * Uses existing trip polls; never sends a Tesla command.
+ */
+let arrivalWatch = { rideId: null, since: null, lastPosition: null };
+function arrivalDistanceMeters(a, b) {
+  const rad = Math.PI / 180;
+  const dLat = (b.latitude - a.latitude) * rad;
+  const dLon = (b.longitude - a.longitude) * rad;
+  const h = Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) *
+    Math.sin(dLon / 2) ** 2;
+  return 12742000 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function checkAutomaticArrival(drive, rideId) {
+  if (arrivalWatch.rideId !== rideId) {
+    arrivalWatch = { rideId, since: null, lastPosition: null };
+  }
+  const numbers = [
+    drive.latitude, drive.longitude,
+    drive.active_route_latitude, drive.active_route_longitude
+  ];
+  if (numbers.some(v => v === null || v === undefined || v === "" || !Number.isFinite(Number(v)))) {
+    arrivalWatch.since = null;
+    arrivalWatch.lastPosition = null;
+    return false;
+  }
+  const vehicle = { latitude: Number(numbers[0]), longitude: Number(numbers[1]) };
+  const destination = { latitude: Number(numbers[2]), longitude: Number(numbers[3]) };
+  if (Math.abs(vehicle.latitude) > 90 || Math.abs(destination.latitude) > 90 ||
+      Math.abs(vehicle.longitude) > 180 || Math.abs(destination.longitude) > 180 ||
+      arrivalDistanceMeters(vehicle, destination) > 91.44) {
+    arrivalWatch.since = null;
+    arrivalWatch.lastPosition = vehicle;
+    return false;
+  }
+  const now = Date.now();
+  const prior = arrivalWatch.lastPosition;
+  const elapsed = prior ? (now - prior.at) / 1000 : 0;
+  const movement = prior ? arrivalDistanceMeters(vehicle, prior) : Infinity;
+  // GPS jitter tolerance: no more than 10 meters between 30-second samples.
+  const stationary = elapsed >= 15 && elapsed <= 90 && movement <= 10;
+  if (!stationary) arrivalWatch.since = null;
+  else if (arrivalWatch.since === null) arrivalWatch.since = prior.at;
+  arrivalWatch.lastPosition = { ...vehicle, at: now };
+  return arrivalWatch.since !== null && now - arrivalWatch.since >= 30000;
+}
+
+/*
  * -------------------------------------------------------
  * PASSENGER TRIP / NAVIGATION
  * -------------------------------------------------------
@@ -2414,6 +2462,18 @@ app.get(
           active: true,
           navigationActive: false
         });
+      }
+
+      // Confirm proximity and a sustained stop before clearing the passenger ride.
+      if (checkAutomaticArrival(drive, currentRide.rideId)) {
+        const saved = loadCurrentRide();
+        if (saved.active && saved.rideId === currentRide.rideId) {
+          currentRide = emptyRide();
+          saveCurrentRide(currentRide);
+          console.log("Passenger ride auto-ended after arrival.");
+        }
+        arrivalWatch = { rideId: null, since: null, lastPosition: null };
+        return res.json({ active: false, navigationActive: false });
       }
 
       /*
