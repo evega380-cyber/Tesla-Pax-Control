@@ -2375,39 +2375,36 @@ function checkAutomaticArrival(drive, rideId, navigationActive) {
   const routeDestination = navigationActive
     ? arrivalCoordinates(drive.active_route_latitude, drive.active_route_longitude)
     : null;
-  // Retain the last destination when Tesla clears navigation at arrival.
+
+  // Tesla may clear navigation as soon as the vehicle arrives.
   if (routeDestination) {
     if (arrivalWatch.destination &&
         arrivalDistanceMeters(routeDestination, arrivalWatch.destination) > 100) {
       arrivalWatch.since = null;
       arrivalWatch.nearDestination = false;
-      arrivalWatch.lastPosition = null;
     }
     arrivalWatch.destination = routeDestination;
   }
-  if (!vehicle || !arrivalWatch.destination) {
-    arrivalWatch.since = null;
-    arrivalWatch.lastPosition = null;
-    return false;
-  }
+
+  if (!vehicle || !arrivalWatch.destination) return false;
   const distance = arrivalDistanceMeters(vehicle, arrivalWatch.destination);
-  if (distance > 91.44) {
+  arrivalWatch.nearDestination = distance <= 91.44;
+  if (!arrivalWatch.nearDestination) {
     arrivalWatch.since = null;
-    arrivalWatch.nearDestination = false;
-    arrivalWatch.lastPosition = { ...vehicle, at: Date.now() };
     return false;
   }
-  arrivalWatch.nearDestination = true;
-  const now = Date.now();
-  const prior = arrivalWatch.lastPosition;
-  const elapsed = prior ? (now - prior.at) / 1000 : 0;
-  const movement = prior ? arrivalDistanceMeters(vehicle, prior) : Infinity;
-  // GPS jitter tolerance, using existing approximately 30-second polls.
-  const stationary = elapsed >= 15 && elapsed <= 90 && movement <= 10;
-  if (!stationary) arrivalWatch.since = null;
-  else if (arrivalWatch.since === null) arrivalWatch.since = prior.at;
-  arrivalWatch.lastPosition = { ...vehicle, at: now };
-  return arrivalWatch.since !== null && now - arrivalWatch.since >= 30000;
+
+  // Park is authoritative: do not infer a parked car from noisy GPS movement.
+  // Missing shift_state must never cause an automatic passenger-session reset.
+  const parked = String(drive.shift_state || "").toUpperCase() === "P";
+  if (!parked) {
+    arrivalWatch.since = null;
+    return false;
+  }
+
+  // Avoid ending a ride during a brief stop or parking maneuver.
+  if (arrivalWatch.since === null) arrivalWatch.since = Date.now();
+  return Date.now() - arrivalWatch.since >= 30000;
 }
 
 /*
