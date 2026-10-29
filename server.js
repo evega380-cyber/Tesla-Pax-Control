@@ -2404,7 +2404,7 @@ function checkAutomaticArrival(drive, rideId, navigationActive) {
 
   // Avoid ending a ride during a brief stop or parking maneuver.
   if (arrivalWatch.since === null) arrivalWatch.since = Date.now();
-  return Date.now() - arrivalWatch.since >= 30000;
+  return Date.now() - arrivalWatch.since >= 10000;
 }
 
 /*
