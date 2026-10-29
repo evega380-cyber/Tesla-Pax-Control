@@ -2349,7 +2349,7 @@ async function sendTeslaCommand(
  * Auto-end the passenger session after arrival.
  * Uses existing trip polls; never sends a Tesla command.
  */
-let arrivalWatch = { rideId: null, since: null, lastPosition: null };
+let arrivalWatch = { rideId: null, since: null, lastPosition: null, destination: null, nearDestination: false };
 function arrivalDistanceMeters(a, b) {
   const rad = Math.PI / 180;
   const dLat = (b.latitude - a.latitude) * rad;
@@ -2359,33 +2359,50 @@ function arrivalDistanceMeters(a, b) {
     Math.sin(dLon / 2) ** 2;
   return 12742000 * Math.asin(Math.min(1, Math.sqrt(h)));
 }
-function checkAutomaticArrival(drive, rideId) {
+function arrivalCoordinates(lat, lon) {
+  if (lat === null || lat === undefined || lat === "" ||
+      lon === null || lon === undefined || lon === "") return null;
+  const latitude = Number(lat), longitude = Number(lon);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+    ? { latitude, longitude } : null;
+}
+function checkAutomaticArrival(drive, rideId, navigationActive) {
   if (arrivalWatch.rideId !== rideId) {
-    arrivalWatch = { rideId, since: null, lastPosition: null };
+    arrivalWatch = { rideId, since: null, lastPosition: null, destination: null, nearDestination: false };
   }
-  const numbers = [
-    drive.latitude, drive.longitude,
-    drive.active_route_latitude, drive.active_route_longitude
-  ];
-  if (numbers.some(v => v === null || v === undefined || v === "" || !Number.isFinite(Number(v)))) {
+  const vehicle = arrivalCoordinates(drive.latitude, drive.longitude);
+  const routeDestination = navigationActive
+    ? arrivalCoordinates(drive.active_route_latitude, drive.active_route_longitude)
+    : null;
+  // Retain the last destination when Tesla clears navigation at arrival.
+  if (routeDestination) {
+    if (arrivalWatch.destination &&
+        arrivalDistanceMeters(routeDestination, arrivalWatch.destination) > 100) {
+      arrivalWatch.since = null;
+      arrivalWatch.nearDestination = false;
+      arrivalWatch.lastPosition = null;
+    }
+    arrivalWatch.destination = routeDestination;
+  }
+  if (!vehicle || !arrivalWatch.destination) {
     arrivalWatch.since = null;
     arrivalWatch.lastPosition = null;
     return false;
   }
-  const vehicle = { latitude: Number(numbers[0]), longitude: Number(numbers[1]) };
-  const destination = { latitude: Number(numbers[2]), longitude: Number(numbers[3]) };
-  if (Math.abs(vehicle.latitude) > 90 || Math.abs(destination.latitude) > 90 ||
-      Math.abs(vehicle.longitude) > 180 || Math.abs(destination.longitude) > 180 ||
-      arrivalDistanceMeters(vehicle, destination) > 91.44) {
+  const distance = arrivalDistanceMeters(vehicle, arrivalWatch.destination);
+  if (distance > 91.44) {
     arrivalWatch.since = null;
-    arrivalWatch.lastPosition = vehicle;
+    arrivalWatch.nearDestination = false;
+    arrivalWatch.lastPosition = { ...vehicle, at: Date.now() };
     return false;
   }
+  arrivalWatch.nearDestination = true;
   const now = Date.now();
   const prior = arrivalWatch.lastPosition;
   const elapsed = prior ? (now - prior.at) / 1000 : 0;
   const movement = prior ? arrivalDistanceMeters(vehicle, prior) : Infinity;
-  // GPS jitter tolerance: no more than 10 meters between 30-second samples.
+  // GPS jitter tolerance, using existing approximately 30-second polls.
   const stationary = elapsed >= 15 && elapsed <= 90 && movement <= 10;
   if (!stationary) arrivalWatch.since = null;
   else if (arrivalWatch.since === null) arrivalWatch.since = prior.at;
@@ -2454,18 +2471,9 @@ app.get(
           ""
         ).trim();
 
-      /*
-       * No active Tesla navigation route.
-       */
-      if (!destination) {
-        return res.json({
-          active: true,
-          navigationActive: false
-        });
-      }
-
-      // Confirm proximity and a sustained stop before clearing the passenger ride.
-      if (checkAutomaticArrival(drive, currentRide.rideId)) {
+      // Check arrival before handling cleared navigation; Tesla may remove
+      // the active route immediately on reaching the drop-off.
+      if (checkAutomaticArrival(drive, currentRide.rideId, Boolean(destination))) {
         const saved = loadCurrentRide();
         if (saved.active && saved.rideId === currentRide.rideId) {
           currentRide = emptyRide();
@@ -2474,6 +2482,10 @@ app.get(
         }
         arrivalWatch = { rideId: null, since: null, lastPosition: null };
         return res.json({ active: false, navigationActive: false });
+      }
+
+      if (!destination) {
+        return res.json({ active: true, navigationActive: false });
       }
 
       /*
