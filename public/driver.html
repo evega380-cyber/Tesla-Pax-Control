@@ -342,6 +342,14 @@ button:active {
 
   </div>
 
+<section class="ride" aria-label="Tesla Diagnostics">
+  <div class="status">TESLA DIAGNOSTICS · READ ONLY</div>
+  <div class="rideDetails" style="display:flex">
+    <span class="rideTag">Gear: <span id="diagGear">Unknown</span></span>
+    <span class="rideTag">Distance: <span id="diagDistance">Unavailable</span></span>
+    <span class="rideTag">Data: <span id="diagStatus">Unavailable</span></span>
+  </div>
+</section>
   <button
     class="end"
     onclick="endRide()"
@@ -677,6 +685,31 @@ pinInput.addEventListener(
   "change",
   checkRide
 );
+
+
+let lastDiagnosticSuccess = 0;
+async function checkTeslaDiagnostics() {
+  const gear = document.getElementById("diagGear");
+  const distance = document.getElementById("diagDistance");
+  const status = document.getElementById("diagStatus");
+  if (!pinInput.value.trim()) {
+    gear.textContent = "Unknown"; distance.textContent = "Unavailable"; status.textContent = "Unavailable"; return;
+  }
+  try {
+    const data = await driverRequest("/api/driver/tesla-diagnostics", { cache: "no-store" });
+    gear.textContent = data.gear || "Unknown";
+    distance.textContent = Number.isFinite(data.distanceFeet) ? data.distanceFeet.toLocaleString() + " ft" : "Unavailable";
+    if (data.status === "Fresh") lastDiagnosticSuccess = Date.now();
+    const age = lastDiagnosticSuccess ? Math.floor((Date.now() - lastDiagnosticSuccess) / 1000) : null;
+    status.textContent = data.status === "Fresh" ? "Fresh (0s)" : age !== null && age <= 30 ? "Stale (" + age + "s)" : "Unavailable";
+  } catch {
+    const age = lastDiagnosticSuccess ? Math.floor((Date.now() - lastDiagnosticSuccess) / 1000) : null;
+    status.textContent = age !== null && age <= 30 ? "Stale (" + age + "s)" : "Unavailable";
+    gear.textContent = "Unknown"; distance.textContent = "Unavailable";
+  }
+}
+pinInput.addEventListener("change", checkTeslaDiagnostics);
+setInterval(checkTeslaDiagnostics, 10000);
 
 </script>
 
