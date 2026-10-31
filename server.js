@@ -2350,6 +2350,9 @@ async function sendTeslaCommand(
  * Uses existing trip polls; never sends a Tesla command.
  */
 let arrivalWatch = { rideId: null, since: null, lastPosition: null, destination: null, nearDestination: false };
+// Retain the last complete navigation sample briefly when Tesla returns partial data.
+let lastTripSample = { rideId: null, at: 0, drive: null };
+const TRIP_SAMPLE_GRACE_MS = 90000;
 function arrivalDistanceMeters(a, b) {
   const rad = Math.PI / 180;
   const dLat = (b.latitude - a.latitude) * rad;
@@ -2461,20 +2464,50 @@ app.get(
           });
       }
 
-      const drive =
-        data?.response?.drive_state ||
-        data?.response?.location_data ||
-        {};
-
-      const destination =
-        String(
-          drive.active_route_destination ||
-          ""
-        ).trim();
+      // Fleet API may supply route details in drive_state and coordinates in
+      // location_data. Merge both instead of discarding one of the objects.
+      const drive = {
+        ...(data?.response?.location_data || {}),
+        ...(data?.response?.drive_state || {})
+      };
+      const rideId = currentRide.rideId;
+      if (lastTripSample.rideId !== rideId) {
+        lastTripSample = { rideId, at: 0, drive: null };
+      }
+      const freshDestination = String(drive.active_route_destination || "").trim();
+      const cached = lastTripSample.drive;
+      const cacheFresh = cached && Date.now() - lastTripSample.at < TRIP_SAMPLE_GRACE_MS;
+      // A temporary empty or partial response must not erase an active route.
+      // Only retain it briefly; never reuse it for a different passenger ride.
+      const destination = freshDestination || (cacheFresh ? cached.active_route_destination : "");
+      const tripDrive = {
+        ...drive,
+        ...(cacheFresh && !freshDestination ? {
+          active_route_destination: cached.active_route_destination,
+          active_route_latitude: cached.active_route_latitude,
+          active_route_longitude: cached.active_route_longitude,
+          active_route_minutes_to_arrival: cached.active_route_minutes_to_arrival,
+          active_route_miles_to_arrival: cached.active_route_miles_to_arrival,
+          active_route_traffic_minutes_delay: cached.active_route_traffic_minutes_delay
+        } : {})
+      };
+      if (freshDestination) {
+        lastTripSample = { rideId, at: Date.now(), drive: tripDrive };
+      } else if (cacheFresh) {
+        console.log("[trip] using recent route snapshot after missing navigation fields", { rideId });
+      }
+      if (!freshDestination && !cacheFresh) {
+        console.log("[trip] route unavailable", {
+          rideId,
+          hasDriveState: !!data?.response?.drive_state,
+          hasLocationData: !!data?.response?.location_data,
+          hasVehicleCoordinates: !!arrivalCoordinates(drive.latitude, drive.longitude)
+        });
+      }
 
       // Check arrival before handling cleared navigation; Tesla may remove
       // the active route immediately on reaching the drop-off.
-      if (checkAutomaticArrival(drive, currentRide.rideId, Boolean(destination))) {
+      if (checkAutomaticArrival(tripDrive, currentRide.rideId, Boolean(destination))) {
         const saved = loadCurrentRide();
         if (saved.active && saved.rideId === currentRide.rideId) {
           currentRide = emptyRide();
@@ -2482,6 +2515,7 @@ app.get(
           console.log("Passenger ride auto-ended after arrival.");
         }
         arrivalWatch = { rideId: null, since: null, lastPosition: null, destination: null, nearDestination: false };
+        lastTripSample = { rideId: null, at: 0, drive: null };
         return res.json({ active: false, navigationActive: false });
       }
 
@@ -2506,56 +2540,56 @@ app.get(
         minutesRemaining:
           Number.isFinite(
             Number(
-              drive.active_route_minutes_to_arrival
+              tripDrive.active_route_minutes_to_arrival
             )
           )
             ? Number(
-                drive.active_route_minutes_to_arrival
+                tripDrive.active_route_minutes_to_arrival
               )
             : null,
 
         milesRemaining:
           Number.isFinite(
             Number(
-              drive.active_route_miles_to_arrival
+              tripDrive.active_route_miles_to_arrival
             )
           )
             ? Number(
-                drive.active_route_miles_to_arrival
+                tripDrive.active_route_miles_to_arrival
               )
             : null,
 
         trafficDelayMinutes:
           Number.isFinite(
             Number(
-              drive.active_route_traffic_minutes_delay
+              tripDrive.active_route_traffic_minutes_delay
             )
           )
             ? Number(
-                drive.active_route_traffic_minutes_delay
+                tripDrive.active_route_traffic_minutes_delay
               )
             : null,
 
         vehicle: {
           latitude:
             Number.isFinite(
-              Number(drive.latitude)
+              Number(tripDrive.latitude)
             )
-              ? Number(drive.latitude)
+              ? Number(tripDrive.latitude)
               : null,
 
           longitude:
             Number.isFinite(
-              Number(drive.longitude)
+              Number(tripDrive.longitude)
             )
-              ? Number(drive.longitude)
+              ? Number(tripDrive.longitude)
               : null,
 
           heading:
             Number.isFinite(
-              Number(drive.heading)
+              Number(tripDrive.heading)
             )
-              ? Number(drive.heading)
+              ? Number(tripDrive.heading)
               : null
         },
 
@@ -2563,22 +2597,22 @@ app.get(
           latitude:
             Number.isFinite(
               Number(
-                drive.active_route_latitude
+                tripDrive.active_route_latitude
               )
             )
               ? Number(
-                  drive.active_route_latitude
+                  tripDrive.active_route_latitude
                 )
               : null,
 
           longitude:
             Number.isFinite(
               Number(
-                drive.active_route_longitude
+                tripDrive.active_route_longitude
               )
             )
               ? Number(
-                  drive.active_route_longitude
+                  tripDrive.active_route_longitude
                 )
               : null
         }
