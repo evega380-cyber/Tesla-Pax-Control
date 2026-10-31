@@ -2414,6 +2414,31 @@ function checkAutomaticArrival(drive, rideId, navigationActive) {
   return Date.now() - arrivalWatch.since >= 10000;
 }
 
+
+/* Read-only driver diagnostics; independent of passenger trip and arrival logic. */
+app.get("/api/driver/tesla-diagnostics", requireDriver, async (req, res) => {
+  try {
+    const token = await getTeslaAccessToken();
+    const response = await fetch(
+      `${TESLA_AUDIENCE}/api/1/vehicles/${encodeURIComponent(VIN)}/vehicle_data?endpoints=drive_state%2Clocation_data`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!response.ok) return res.status(503).json({ gear: "Unknown", distanceFeet: null, status: "Unavailable" });
+    const payload = await response.json();
+    const drive = { ...(payload?.response?.location_data || {}), ...(payload?.response?.drive_state || {}) };
+    const gears = { P: "Park", D: "Drive", R: "Reverse", N: "Neutral" };
+    const gear = gears[String(drive.shift_state || "").toUpperCase()] || "Unknown";
+    const position = arrivalCoordinates(drive.latitude, drive.longitude);
+    const target = arrivalCoordinates(drive.active_route_latitude, drive.active_route_longitude);
+    const distanceFeet = position && target ? Math.round(arrivalDistanceMeters(position, target) * 3.28084) : null;
+    const status = (gear !== "Unknown" || position || target) ? "Fresh" : "Unavailable";
+    res.set("Cache-Control", "no-store");
+    return res.json({ gear, distanceFeet, status, checkedAt: Date.now() });
+  } catch {
+    return res.status(503).json({ gear: "Unknown", distanceFeet: null, status: "Unavailable" });
+  }
+});
+
 /*
  * -------------------------------------------------------
  * PASSENGER TRIP / NAVIGATION
