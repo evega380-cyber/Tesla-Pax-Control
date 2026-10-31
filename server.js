@@ -2386,7 +2386,10 @@ function checkAutomaticArrival(drive, rideId, navigationActive) {
     arrivalWatch.destination = routeDestination;
   }
 
-  if (!vehicle || !arrivalWatch.destination) return false;
+  if (!vehicle || !arrivalWatch.destination) {
+    console.log('[arrival] waiting for vehicle/destination coordinates', { rideId, hasVehicle: !!vehicle, hasDestination: !!arrivalWatch.destination, navigationActive });
+    return false;
+  }
   const distance = arrivalDistanceMeters(vehicle, arrivalWatch.destination);
   arrivalWatch.nearDestination = distance <= 91.44;
   if (!arrivalWatch.nearDestination) {
@@ -2397,6 +2400,7 @@ function checkAutomaticArrival(drive, rideId, navigationActive) {
   // Park is authoritative: do not infer a parked car from noisy GPS movement.
   // Missing shift_state must never cause an automatic passenger-session reset.
   const parked = String(drive.shift_state || "").toUpperCase() === "P";
+  console.log('[arrival] status', { rideId, distanceMeters: Math.round(distance), nearDestination: arrivalWatch.nearDestination, shiftState: drive.shift_state ?? 'unavailable', parked, secondsInPark: arrivalWatch.since === null ? 0 : Math.floor((Date.now() - arrivalWatch.since) / 1000) });
   if (!parked) {
     arrivalWatch.since = null;
     return false;
@@ -2434,7 +2438,7 @@ app.get(
 
       const response =
         await fetch(
-          `${TESLA_AUDIENCE}/api/1/vehicles/${encodeURIComponent(VIN)}/vehicle_data?endpoints=location_data`,
+          `${TESLA_AUDIENCE}/api/1/vehicles/${encodeURIComponent(VIN)}/vehicle_data?endpoints=drive_state%2Clocation_data`,
           {
             headers: {
               Authorization:
@@ -2477,7 +2481,7 @@ app.get(
           saveCurrentRide(currentRide);
           console.log("Passenger ride auto-ended after arrival.");
         }
-        arrivalWatch = { rideId: null, since: null, lastPosition: null };
+        arrivalWatch = { rideId: null, since: null, lastPosition: null, destination: null, nearDestination: false };
         return res.json({ active: false, navigationActive: false });
       }
 
