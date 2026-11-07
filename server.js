@@ -376,6 +376,21 @@ function requireDriver(
 }
 
 
+/* Passenger thank-you completion: end only the matching active session.
+ * No Tesla location, Park, or arrival requirement.
+ */
+app.post("/api/passenger/complete-thank-you", requirePassenger, (req, res) => {
+  currentRide = loadCurrentRide();
+  const rideId = String(req.body?.rideId || "");
+  if (!rideId || !currentRide.active || currentRide.rideId !== rideId) {
+    return res.status(409).json({ ok: false, error: "Ride no longer active." });
+  }
+  saveCurrentRide(emptyRide());
+  currentRide = emptyRide();
+  console.log("Passenger ride ended after thank-you countdown.");
+  return res.json({ ok: true });
+});
+
 /*
  * -------------------------------------------------------
  * PASSENGER CHECKS CURRENT RIDE
