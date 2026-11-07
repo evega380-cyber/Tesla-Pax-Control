@@ -2415,6 +2415,22 @@ function checkAutomaticArrival(drive, rideId, navigationActive) {
 }
 
 
+/* A thank-you announcement arms a one-shot, ride-specific 30-second timer.
+ * A parked arrival is still required to prevent an early ETA announcement
+ * from clearing a passenger while the car is moving.
+ */
+let thankYouAutoEnd = { rideId: null, announcedAt: null };
+app.post("/api/passenger/arrival-announced", requirePassenger, (req, res) => {
+  const ride = loadCurrentRide();
+  if (!ride.active || !ride.rideId || req.body?.rideId !== ride.rideId) {
+    return res.status(409).json({ ok: false });
+  }
+  if (thankYouAutoEnd.rideId !== ride.rideId) {
+    thankYouAutoEnd = { rideId: ride.rideId, announcedAt: Date.now() };
+  }
+  return res.json({ ok: true });
+});
+
 /* Read-only driver diagnostics; independent of passenger trip and arrival logic. */
 app.get("/api/driver/tesla-diagnostics", requireDriver, async (req, res) => {
   try {
@@ -2532,7 +2548,11 @@ app.get(
 
       // Check arrival before handling cleared navigation; Tesla may remove
       // the active route immediately on reaching the drop-off.
-      if (checkAutomaticArrival(tripDrive, currentRide.rideId, Boolean(destination))) {
+      const parkedAtDestination = checkAutomaticArrival(tripDrive, currentRide.rideId, Boolean(destination));
+      const announcementExpired = thankYouAutoEnd.rideId === currentRide.rideId &&
+        thankYouAutoEnd.announcedAt !== null &&
+        Date.now() - thankYouAutoEnd.announcedAt >= 30000;
+      if (parkedAtDestination && announcementExpired) {
         const saved = loadCurrentRide();
         if (saved.active && saved.rideId === currentRide.rideId) {
           currentRide = emptyRide();
