@@ -2917,6 +2917,11 @@ async function loadTrip(){
       if(spoken){
         arrivalAnnouncementRideId=
           currentRideId;
+        fetch("/api/passenger/arrival-announced", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rideId: currentRideId })
+        }).catch(()=>{});
       }
     }
 
