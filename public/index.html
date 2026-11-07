@@ -1367,6 +1367,7 @@ let welcomeTimeout=null;
 let currentRideLanguage="en";
 let currentRideApp="other";
 let arrivalAnnouncementRideId=null;
+let thankYouEndTimer=null;
 
 let tripMap=null;
 let vehicleMarker=null;
@@ -1637,7 +1638,7 @@ function rideAppName(rideApp){
   })[rideApp]||"";
 }
 
-function speakText(text,language){
+function speakText(text,language,onComplete=null){
 
   if(!welcomeSoundEnabled) return false;
   if(!("speechSynthesis" in window)) return false;
@@ -1662,6 +1663,7 @@ function speakText(text,language){
     const voice=getSpeechVoice(language);
     if(voice) speech.voice=voice;
 
+    if(onComplete) speech.onend=onComplete;
     window.speechSynthesis.speak(speech);
     return true;
 
@@ -1733,7 +1735,23 @@ function speakArrivalThankYou(language="en"){
       `We hope you enjoyed your ride, and we wish you a wonderful rest of your day!`;
   }
 
-  return speakText(text,language);
+  const rideId=currentRideId;
+  return speakText(text,language,()=>{
+    if(!rideId || currentRideId!==rideId) return;
+    if(thankYouEndTimer) clearTimeout(thankYouEndTimer);
+    thankYouEndTimer=setTimeout(async()=>{
+      if(currentRideId!==rideId) return;
+      try{
+        await api("/api/passenger/complete-thank-you",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({rideId})
+        });
+      }catch(error){
+        console.log("Thank-you auto-end failed:",error.message);
+      }
+    },30000);
+  });
 }
 
 /* --------------------------------------------------
